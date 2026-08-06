@@ -15,6 +15,7 @@ Item {
     id: root
 
     property bool isOpen: false
+    signal unfocusRequested()
 
     implicitWidth: 44
     implicitHeight: 44
@@ -45,10 +46,14 @@ Item {
 
     onIsOpenChanged: {
         if (!isOpen) {
+            searchInput.focus = false;
+            searchInput.text = "";
+            root.searchText = "";
             previewTimer.stop();
             previewTimer.targetName = "";
             previewTimer.targetFlavour = "";
             Colours.stopPreview();
+            root.unfocusRequested();
         }
     }
 
@@ -211,6 +216,8 @@ Item {
                                 previewTimer.targetName = "";
                                 previewTimer.targetFlavour = "";
                                 Colours.setScheme(schemeRow.modelData.name, schemeRow.modelData.flavour, Colours.light ? "light" : "dark");
+                                searchInput.focus = false;
+                                root.unfocusRequested();
                             }
                         }
 
@@ -329,6 +336,34 @@ Item {
                             text: root.searchText
                             onTextChanged: root.searchText = text
                             clip: true
+                            selectByMouse: true
+
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_Escape) {
+                                    if (root.searchText.length > 0) {
+                                        root.searchText = "";
+                                        searchInput.text = "";
+                                    } else {
+                                        root.isOpen = false;
+                                        searchInput.focus = false;
+                                        root.unfocusRequested();
+                                    }
+                                    event.accepted = true;
+                                    return;
+                                }
+
+                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    if (root.filteredSchemes.length > 0) {
+                                        const s = root.filteredSchemes[0];
+                                        Colours.setScheme(s.name, s.flavour, Colours.light ? "light" : "dark");
+                                        root.isOpen = false;
+                                        searchInput.focus = false;
+                                        root.unfocusRequested();
+                                    }
+                                    event.accepted = true;
+                                    return;
+                                }
+                            }
 
                             Text {
                                 text: "Search schemes..."
@@ -349,6 +384,8 @@ Item {
                                 onTapped: {
                                     root.searchText = "";
                                     searchInput.text = "";
+                                    searchInput.focus = false;
+                                    root.unfocusRequested();
                                 }
                             }
                         }

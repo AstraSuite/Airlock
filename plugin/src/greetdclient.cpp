@@ -241,7 +241,7 @@ void GreetdClient::handleMessage(const QJsonObject &json)
         const QString errType = json.value(QStringLiteral("error_type")).toString();
         qWarning() << "[CaelestiaGreeter] Error from greetd:" << errType << errDesc;
 
-        m_errorMessage = errDesc.isEmpty() ? QStringLiteral("Authentication failed") : errDesc;
+        m_errorMessage = QStringLiteral("Incorrect password. Please try again.");
         emit errorMessageChanged();
         m_authFailed = true;
         emit authFailedChanged();

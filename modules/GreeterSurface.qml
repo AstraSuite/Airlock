@@ -116,6 +116,16 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
         Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
 
+        TapHandler {
+            onTapped: {
+                if (settingsModal.isOpen || schemeModal.isOpen) {
+                    settingsModal.isOpen = false;
+                    schemeModal.isOpen = false;
+                }
+                keyCapture.forceActiveFocus();
+            }
+        }
+
         Center {
             id: centerPanel
             anchors.centerIn: parent
@@ -135,6 +145,7 @@ Rectangle {
         onClicked: {
             settingsModal.isOpen = false;
             schemeModal.isOpen = false;
+            keyCapture.forceActiveFocus();
         }
     }
 
@@ -147,6 +158,9 @@ Rectangle {
         anchors.bottomMargin: 24
         z: 2000
         onExitRequested: root.exitTestMode()
+        onIsOpenChanged: {
+            if (!isOpen) keyCapture.forceActiveFocus();
+        }
     }
 
     // ── Morphing Schemes Modal (Bottom-Right) ────────────────────
@@ -157,6 +171,10 @@ Rectangle {
         anchors.rightMargin: 24
         anchors.bottomMargin: 24
         z: 2000
+        onUnfocusRequested: keyCapture.forceActiveFocus()
+        onIsOpenChanged: {
+            if (!isOpen) keyCapture.forceActiveFocus();
+        }
     }
 
     // ── Dedicated Key Capture Handler ─────────────────────────────
@@ -166,6 +184,12 @@ Rectangle {
         focus: true
 
         Component.onCompleted: forceActiveFocus()
+
+        onActiveFocusChanged: {
+            if (!activeFocus && !schemeModal.isOpen && !settingsModal.isOpen) {
+                keyCapture.forceActiveFocus();
+            }
+        }
 
         Keys.onPressed: event => {
             // Close modals if open on Escape

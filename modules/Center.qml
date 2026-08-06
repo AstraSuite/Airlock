@@ -119,8 +119,15 @@ Item {
         }
     }
 
+    onPasswordBufferChanged: {
+        if (passwordBuffer.length > 0) {
+            root.authFailed = false;
+            stateMsgComponent.clear();
+        }
+    }
+
     function _submit() {
-        stateMsg = "";
+        stateMsgComponent.clear();
         authFailed = false;
         if (!Greetd.available) {
             // Simulate a real greetd handshake: stash the password, clear the
@@ -140,7 +147,10 @@ Item {
                 Greetd.createSession(_user.username);
             }
         } else if (Greetd.state === GreetdState.Authenticating) {
+            const pass = root.passwordBuffer.length > 0 ? root.passwordBuffer : root.pendingPassword;
             root.passwordBuffer = "";
+            root.pendingPassword = "";
+            Greetd.respond(pass);
         }
     }
 
@@ -148,8 +158,8 @@ Item {
         root.testSimulating = false;
         testAuthTimer.stop();
         root.pendingPassword = "";
-        root.stateMsg = "";
         root.authFailed = false;
+        stateMsgComponent.clear();
     }
 
     Timer {
@@ -158,8 +168,20 @@ Item {
         repeat: false
         onTriggered: {
             root.testSimulating = false;
-            root.stateMsg = "Test mode: login simulated";
+            root.handleAuthFailure("Incorrect password. Please try again.");
         }
+    }
+
+    function handleAuthFailure(rawMsg) {
+        root.pendingPassword = "";
+        root.passwordBuffer = "";
+        root.authFailed = true;
+
+        if (Greetd.available && Greetd.state !== GreetdState.Inactive) {
+            Greetd.cancelSession();
+        }
+
+        stateMsgComponent.triggerFailure(qsTr("Incorrect password. Please try again."));
     }
 
     Connections {
@@ -174,15 +196,11 @@ Item {
             }
         }
         function onAuthFailure(message) {
-            root.pendingPassword = "";
-            root.stateMsg = message.length > 0 ? message : "Incorrect password.";
-            root.authFailed = true;
-            root.passwordBuffer = "";
-            failAnim.restart();
+            root.handleAuthFailure(message);
         }
         function onReadyToLaunch() {
             root.pendingPassword = "";
-            root.stateMsg = "Starting session…";
+            stateMsgComponent.showInfo(qsTr("Starting session…"));
             root.authFailed = false;
             const s = root._session;
             if (s?.exec) {
@@ -193,10 +211,7 @@ Item {
             }
         }
         function onError(error) {
-            root.pendingPassword = "";
-            root.stateMsg = error;
-            root.authFailed = true;
-            failAnim.restart();
+            root.handleAuthFailure(error);
         }
     }
 
@@ -322,7 +337,7 @@ Item {
                              || Greetd.state === GreetdState.Authenticating
                              || Greetd.state === GreetdState.Launching
                 authFailed: root.authFailed
-                authPrompt: root.stateMsg.toLowerCase().includes("password") ? root.stateMsg : ""
+                authPrompt: ""
                 centerWidth: 360
                 onSubmitted: root._submit()
             }
@@ -343,14 +358,11 @@ Item {
             }
 
             // ── State / Feedback Message ─────────────────────────────
-            Text {
+            StateMessage {
+                id: stateMsgComponent
                 Layout.alignment: Qt.AlignHCenter
+                Layout.fillWidth: true
                 Layout.topMargin: 2
-                text: root.stateMsg
-                visible: root.stateMsg.length > 0
-                font.family: "Google Sans Flex"
-                font.pointSize: 10
-                color: root.authFailed ? Colours.palette.m3error : Colours.palette.m3primary
             }
         }
     }

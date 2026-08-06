@@ -24,6 +24,7 @@ StatusCard 1.0 StatusCard.qml
 StyledRect 1.0 StyledRect.qml
 StyledSlider 1.0 StyledSlider.qml
 StyledText 1.0 StyledText.qml
+StateMessage 1.0 StateMessage.qml
 UserPickerModal 1.0 UserPickerModal.qml
 VerticalFadeListView 1.0 VerticalFadeListView.qml
 WeatherCard 1.0 WeatherCard.qml
