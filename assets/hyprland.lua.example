@@ -11,6 +11,10 @@ hl.config({
     blur = { enabled = false },
     shadow = { enabled = false },
   },
+  cursor = {
+    -- Set to false if using standard XCursor themes (such as Bibata in /usr/share/icons)
+    enable_hyprcursor = false,
+  },
   input = {
     kb_layout = "us", -- This should be changed as needed
     numlock_by_default = false,
@@ -29,8 +33,13 @@ hl.config({
   },
 })
 
+-- Cursor configuration (ensure cursor theme is installed in /usr/share/icons for the greeter user)
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("HYPRCURSOR_SIZE", "24")
+
 -- Start the greeter on init
 hl.on("hyprland.start", function()
-  hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 14")
   hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
 end)

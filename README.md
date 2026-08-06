@@ -162,6 +162,10 @@ hl.config({
     blur = { enabled = false },
     shadow = { enabled = false },
   },
+  cursor = {
+    -- Set to false if using standard XCursor themes (such as Bibata in /usr/share/icons)
+    enable_hyprcursor = false,
+  },
   input = {
     kb_layout = "us", -- Change as needed
     numlock_by_default = false,
@@ -180,9 +184,14 @@ hl.config({
   },
 })
 
+-- Cursor configuration (ensure cursor theme is installed in /usr/share/icons for the greeter user)
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("HYPRCURSOR_SIZE", "24")
+
 -- Start the greeter on init
 hl.on("hyprland.start", function()
-  hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 14")
   hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
 end)
 ```
@@ -192,15 +201,20 @@ end)
 When using Hyprland as the compositor, you can customize any aspect of the greeter environment in `/etc/greetd/hyprland.lua`:
 
 - **Cursor Theme & Size**:
-  Set your desired cursor theme and size on startup using `hyprctl setcursor`:
+  Most cursor themes (like `Bibata-Modern-Classic` or `Adwaita`) are packaged in standard XCursor format without `manifest.hl`. To load them properly with the correct size and glyphs, set `enable_hyprcursor = false` in `cursor` config and define `hl.env`:
   ```lua
-  hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 14")
-    hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
-  end)
+  cursor = {
+    enable_hyprcursor = false,
+  },
+  ```
+  ```lua
+  hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+  hl.env("XCURSOR_SIZE", "24")
+  hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+  hl.env("HYPRCURSOR_SIZE", "24")
   ```
   > [!NOTE]
-  > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
+  > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`). Avoid using `hyprctl setcursor` in `hl.on("hyprland.start")` as synchronous IPC calls before initialization can deadlock the compositor.
 
 - **Keyboard Layout & Input**:
   Configure keyboard layout, variants, repeat rates, and touchpad behaviors:
