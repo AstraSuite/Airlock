@@ -27,7 +27,7 @@ cd caelestia-greeter
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-# Install QML module, configuration, and launcher (defaults to /usr)
+# Install QML module, configuration, and launcher
 sudo cmake --install build
 ```
 
