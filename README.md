@@ -180,6 +180,15 @@ hl.config({
   },
 })
 
+-- Cursors (ensure cursor theme is installed in /usr/share/icons)
+local cursor_theme = "Bibata-Modern-Classic"
+local cursor_size = "14"
+
+hl.env("HYPRCURSOR_THEME", cursor_theme)
+hl.env("HYPRCURSOR_SIZE", cursor_size)
+hl.env("XCURSOR_THEME", cursor_theme)
+hl.env("XCURSOR_SIZE", cursor_size)
+
 -- Start the greeter on init
 hl.on("hyprland.start", function()
   hl.exec_cmd("caelestia-greeter; hyprctl dispatch exit")
@@ -189,6 +198,20 @@ end)
 #### Customizing `/etc/greetd/hyprland.lua`
 
 When using Hyprland as the compositor, you can customize any aspect of the greeter environment in `/etc/greetd/hyprland.lua`:
+
+- **Cursor Theme & Size**:
+  Set your cursor theme and size via the unified `cursor_theme` and `cursor_size` variables:
+  ```lua
+  local cursor_theme = "Bibata-Modern-Classic"
+  local cursor_size = "14"
+
+  hl.env("HYPRCURSOR_THEME", cursor_theme)
+  hl.env("HYPRCURSOR_SIZE", cursor_size)
+  hl.env("XCURSOR_THEME", cursor_theme)
+  hl.env("XCURSOR_SIZE", cursor_size)
+  ```
+  > [!NOTE]
+  > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
 
 - **Keyboard Layout & Input**:
   Configure keyboard layout, variants, repeat rates, and touchpad behaviors:

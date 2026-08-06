@@ -29,6 +29,15 @@ hl.config({
   },
 })
 
+-- Cursors (ensure cursor theme is installed in /usr/share/icons)
+local cursor_theme = "Bibata-Modern-Classic"
+local cursor_size = "14"
+
+hl.env("HYPRCURSOR_THEME", cursor_theme)
+hl.env("HYPRCURSOR_SIZE", cursor_size)
+hl.env("XCURSOR_THEME", cursor_theme)
+hl.env("XCURSOR_SIZE", cursor_size)
+
 -- Start the greeter on init
 hl.on("hyprland.start", function()
   hl.exec_cmd("caelestia-greeter; hyprctl dispatch exit")
