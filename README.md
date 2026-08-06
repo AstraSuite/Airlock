@@ -83,7 +83,7 @@ sudo chmod 755 /var/cache/caelestia-greeter
 ```
 
 > [!NOTE]
-> Greeter UI preferences (avatar shape, 12/24h clock, idle lava lamp animation, and last-used session per user) are automatically saved to `/var/cache/caelestia-greeter/greeter.json`. Color schemes, flavours, and dark/light modes are fetched dynamically from the `caelestia scheme` CLI and system scheme state.
+> Greeter UI preferences (avatar shape, 12/24h clock, idle animations, color scheme, flavour, dark/light mode, and last-used session per user) are automatically saved to `/var/cache/caelestia-greeter/greeter.json`.
 
 ### 2. Setting User Profile Pictures (Avatars)
 
