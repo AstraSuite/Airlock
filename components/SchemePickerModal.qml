@@ -43,6 +43,33 @@ Item {
         SchemeDiscovery.reload();
     }
 
+    onIsOpenChanged: {
+        if (!isOpen) {
+            previewTimer.stop();
+            previewTimer.targetName = "";
+            previewTimer.targetFlavour = "";
+            Colours.stopPreview();
+        }
+    }
+
+    Component.onDestruction: {
+        Colours.stopPreview();
+    }
+
+    Timer {
+        id: previewTimer
+        interval: 40
+        property string targetName: ""
+        property string targetFlavour: ""
+        onTriggered: {
+            if (targetName.length > 0 && targetFlavour.length > 0 && root.isOpen) {
+                Colours.previewScheme(targetName, targetFlavour);
+            } else {
+                Colours.stopPreview();
+            }
+        }
+    }
+
     BlobGroup {
         id: blobGroup
         color: Colours.tPalette.m3surfaceContainer
@@ -63,6 +90,18 @@ Item {
         group: blobGroup
         radius: 20
         deformScale: 0.00001
+
+        HoverHandler {
+            id: modalHover
+            onHoveredChanged: {
+                if (!hovered) {
+                    previewTimer.stop();
+                    previewTimer.targetName = "";
+                    previewTimer.targetFlavour = "";
+                    Colours.stopPreview();
+                }
+            }
+        }
 
         states: State {
             name: "open"
@@ -119,6 +158,18 @@ Item {
                     spacing: 4
                     model: root.filteredSchemes
 
+                    HoverHandler {
+                        id: listHover
+                        onHoveredChanged: {
+                            if (!hovered) {
+                                previewTimer.stop();
+                                previewTimer.targetName = "";
+                                previewTimer.targetFlavour = "";
+                                Colours.stopPreview();
+                            }
+                        }
+                    }
+
                     delegate: Rectangle {
                         id: schemeRow
                         required property int index
@@ -131,18 +182,34 @@ Item {
                         width: schemeListView.width
                         implicitHeight: 46
                         radius: 12
-                        color: rowMouse.containsMouse
-                            ? Colours.tPalette.m3primaryContainer
-                            : (schemeRow.isActive ? Colours.tPalette.m3surfaceContainerHighest : "transparent")
+                        color: schemeRow.isActive ? Colours.tPalette.m3surfaceContainerHighest : "transparent"
 
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        // Subtle, smooth hover highlight layer
+                        Rectangle {
+                            id: hoverHighlight
+                            anchors.fill: parent
+                            radius: 12
+                            color: Colours.palette.m3primary
+                            opacity: rowMouse.containsMouse ? 0.12 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
 
                         MouseArea {
                             id: rowMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            onEntered: {
+                                previewTimer.targetName = schemeRow.modelData.name;
+                                previewTimer.targetFlavour = schemeRow.modelData.flavour;
+                                previewTimer.restart();
+                            }
                             onClicked: {
+                                previewTimer.stop();
+                                previewTimer.targetName = "";
+                                previewTimer.targetFlavour = "";
                                 Colours.setScheme(schemeRow.modelData.name, schemeRow.modelData.flavour, Colours.light ? "light" : "dark");
                             }
                         }
@@ -168,6 +235,8 @@ Item {
                                 anchors.fill: parent
                                 radius: width / 2
                                 color: swatchContainer.safeHex(schemeRow.modelData.colours?.surface, Colours.palette.m3surface)
+                                border.width: 1
+                                border.color: Qt.alpha(Colours.palette.m3outline, 0.25)
 
                                 Item {
                                     anchors.top: parent.top

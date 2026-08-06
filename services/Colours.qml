@@ -126,6 +126,37 @@ Singleton {
         }
     }
 
+    property bool isPreviewing: false
+    property string previewSchemeName: ""
+    property string previewFlavour: ""
+
+    function previewScheme(name, flavour) {
+        if (!name || !flavour) {
+            stopPreview();
+            return;
+        }
+        if (name === root.schemeName && flavour === root.flavour) {
+            stopPreview();
+            return;
+        }
+        root.isPreviewing = true;
+        root.previewSchemeName = name;
+        root.previewFlavour = flavour;
+
+        const fastColours = SchemeDiscovery.getSchemeColours(name, flavour, root._mode);
+        if (fastColours && Object.keys(fastColours).length > 0) {
+            _applyColoursMap(fastColours);
+        }
+    }
+
+    function stopPreview() {
+        if (!root.isPreviewing) return;
+        root.isPreviewing = false;
+        root.previewSchemeName = "";
+        root.previewFlavour = "";
+        reloadColours();
+    }
+
     function setMode(newMode) {
         root._mode = newMode;
         GreeterState.schemeMode = newMode;
@@ -133,6 +164,10 @@ Singleton {
     }
 
     function setScheme(name, flavour, mode) {
+        root.isPreviewing = false;
+        root.previewSchemeName = "";
+        root.previewFlavour = "";
+
         const targetMode = (mode && mode.length > 0) ? mode : (root._mode || "dark");
         root.schemeName = name;
         root.flavour = flavour;
