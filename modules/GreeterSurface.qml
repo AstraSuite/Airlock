@@ -116,15 +116,7 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
         Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
 
-        TapHandler {
-            onTapped: {
-                if (settingsModal.isOpen || schemeModal.isOpen) {
-                    settingsModal.isOpen = false;
-                    schemeModal.isOpen = false;
-                }
-                keyCapture.forceActiveFocus();
-            }
-        }
+
 
         Center {
             id: centerPanel

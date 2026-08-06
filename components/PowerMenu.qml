@@ -40,8 +40,8 @@ Item {
                 required property int index
                 required property var modelData
 
-                readonly property bool isHovered: hoverHandler.hovered
-                readonly property bool isPressed: tapHandler.pressed
+                readonly property bool isHovered: stateLayer.containsMouse
+                readonly property bool isPressed: stateLayer.pressed
                 readonly property int totalCount: root.items.length
 
                 implicitHeight: 38
@@ -71,14 +71,10 @@ Item {
 
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                HoverHandler {
-                    id: hoverHandler
-                    cursorShape: Qt.PointingHandCursor
-                }
-
-                TapHandler {
-                    id: tapHandler
-                    onTapped: segBtn.modelData.act()
+                StateLayer {
+                    id: stateLayer
+                    color: segBtn.isHovered ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
+                    onClicked: segBtn.modelData.act()
                 }
 
                 MaterialIcon {

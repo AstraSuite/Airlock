@@ -38,6 +38,13 @@ StyledRect {
         if (authFailed) failFlash.restart();
     }
 
+    StateLayer {
+        id: stateLayer
+        radius: root.radius
+        showHoverBackground: false
+        cursorShape: Qt.IBeamCursor
+    }
+
     // Error flash overlay
     Rectangle {
         id: errorFlash
@@ -136,11 +143,10 @@ StyledRect {
                     CAnim {}
                 }
 
-                MouseArea {
+                StateLayer {
                     id: enterMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: root.buffer.length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    color: Colours.palette.m3onPrimary
+                    disabled: root.buffer.length === 0
                     onClicked: {
                         if (root.buffer.length > 0) root.submitted();
                     }

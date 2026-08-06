@@ -38,19 +38,15 @@ Item {
             topRightRadius: 4
             bottomRightRadius: 4
 
-            color: leftHover.hovered
+            color: leftStateLayer.containsMouse
                 ? Colours.tPalette.m3primaryContainer
                 : Colours.tPalette.m3surfaceContainerHigh
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
-            HoverHandler {
-                id: leftHover
-                cursorShape: Qt.PointingHandCursor
-            }
-
-            TapHandler {
-                onTapped: {
+            StateLayer {
+                id: leftStateLayer
+                onClicked: {
                     if (SessionDiscovery.sessions.length > 1) {
                         root.currentIndex = (root.currentIndex + 1) % SessionDiscovery.sessions.length;
                         root.sessionChanged(root.currentIndex);
@@ -101,19 +97,15 @@ Item {
             Behavior on topLeftRadius { NumberAnimation { duration: 150 } }
             Behavior on bottomLeftRadius { NumberAnimation { duration: 150 } }
 
-            color: rightHover.hovered || root.menuOpen
+            color: rightStateLayer.containsMouse || root.menuOpen
                 ? Colours.tPalette.m3primaryContainer
                 : Colours.tPalette.m3surfaceContainerHigh
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
-            HoverHandler {
-                id: rightHover
-                cursorShape: Qt.PointingHandCursor
-            }
-
-            TapHandler {
-                onTapped: root.menuOpen = !root.menuOpen
+            StateLayer {
+                id: rightStateLayer
+                onClicked: root.menuOpen = !root.menuOpen
             }
 
             MaterialIcon {
@@ -176,19 +168,15 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 38
                     radius: 10
-                    color: itemHover.hovered || root.currentIndex === itemRow.index
+                    color: itemStateLayer.containsMouse || root.currentIndex === itemRow.index
                         ? Colours.tPalette.m3primaryContainer
                         : "transparent"
 
                     Behavior on color { ColorAnimation { duration: 120 } }
 
-                    HoverHandler {
-                        id: itemHover
-                        cursorShape: Qt.PointingHandCursor
-                    }
-
-                    TapHandler {
-                        onTapped: {
+                    StateLayer {
+                        id: itemStateLayer
+                        onClicked: {
                             root.currentIndex = itemRow.index;
                             root.sessionChanged(itemRow.index);
                             root.menuOpen = false;

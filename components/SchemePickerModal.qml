@@ -191,21 +191,10 @@ Item {
 
                         Behavior on color { ColorAnimation { duration: 150 } }
 
-                        // Subtle, smooth hover highlight layer
-                        Rectangle {
-                            id: hoverHighlight
-                            anchors.fill: parent
-                            radius: 12
-                            color: Colours.palette.m3primary
-                            opacity: rowMouse.containsMouse ? 0.12 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                        }
 
-                        MouseArea {
-                            id: rowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
+
+                        StateLayer {
+                            id: rowStateLayer
                             onEntered: {
                                 previewTimer.targetName = schemeRow.modelData.name;
                                 previewTimer.targetFlavour = schemeRow.modelData.flavour;
@@ -315,6 +304,14 @@ Item {
                     color: Colours.tPalette.m3surfaceContainerHighest
                     Behavior on color { CAnim {} }
 
+                    StateLayer {
+                        id: searchStateLayer
+                        radius: searchBar.radius
+                        showHoverBackground: false
+                        cursorShape: Qt.IBeamCursor
+                        onPressed: e => searchInput.forceActiveFocus()
+                    }
+
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 12
@@ -337,6 +334,12 @@ Item {
                             onTextChanged: root.searchText = text
                             clip: true
                             selectByMouse: true
+
+                            TapHandler {
+                                onTapped: point => {
+                                    searchStateLayer.press(point.position.x + searchInput.x, point.position.y + searchInput.y);
+                                }
+                            }
 
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_Escape) {

@@ -228,8 +228,8 @@ Item {
                         }
                     }
 
-                    TapHandler {
-                        onTapped: {
+                    StateLayer {
+                        onClicked: {
                             root.tempSelectedIndex = userRow.index;
                         }
                     }
@@ -254,11 +254,15 @@ Item {
                     implicitWidth: 80
                     implicitHeight: 34
                     radius: 17
-                    color: cancelHover.hovered
+                    color: cancelState.containsMouse
                         ? Qt.alpha(Colours.palette.m3onSurface, 0.12)
                         : "transparent"
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: cancelHover }
+
+                    StateLayer {
+                        id: cancelState
+                        onClicked: root.isOpen = false
+                    }
 
                     Text {
                         anchors.centerIn: parent
@@ -268,10 +272,6 @@ Item {
                         font.weight: Font.Medium
                         color: Colours.palette.m3primary
                     }
-
-                    TapHandler {
-                        onTapped: root.isOpen = false
-                    }
                 }
 
                 // Switch Button
@@ -279,11 +279,20 @@ Item {
                     implicitWidth: 86
                     implicitHeight: 34
                     radius: 17
-                    color: switchHover.hovered
+                    color: switchState.containsMouse
                         ? Qt.darker(Colours.palette.m3primary, 1.1)
                         : Colours.palette.m3primary
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: switchHover }
+
+                    StateLayer {
+                        id: switchState
+                        color: Colours.palette.m3onPrimary
+                        onClicked: {
+                            root.selectedIndex = root.tempSelectedIndex;
+                            root.userSelected(root.selectedIndex);
+                            root.isOpen = false;
+                        }
+                    }
 
                     Text {
                         anchors.centerIn: parent
@@ -292,14 +301,6 @@ Item {
                         font.pointSize: 10
                         font.weight: Font.DemiBold
                         color: Colours.palette.m3onPrimary
-                    }
-
-                    TapHandler {
-                        onTapped: {
-                            root.selectedIndex = root.tempSelectedIndex;
-                            root.userSelected(root.selectedIndex);
-                            root.isOpen = false;
-                        }
                     }
                 }
             }

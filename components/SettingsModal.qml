@@ -180,7 +180,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "Profile picture mask geometry"
+                                text: "Mask geometry"
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 8
                                 color: Colours.palette.m3outline
@@ -206,6 +206,11 @@ Item {
                                 bottomRightRadius: 4
                                 color: Colours.tPalette.m3primaryContainer
 
+                                StateLayer {
+                                    color: Colours.palette.m3onPrimaryContainer
+                                    onClicked: root.shapeMenuOpen = !root.shapeMenuOpen
+                                }
+
                                 RowLayout {
                                     id: shapeBtnRow
                                     anchors.centerIn: parent
@@ -225,10 +230,6 @@ Item {
                                         color: Colours.palette.m3onPrimaryContainer
                                     }
                                 }
-
-                                TapHandler {
-                                    onTapped: root.shapeMenuOpen = !root.shapeMenuOpen
-                                }
                             }
 
                             // Right Button: Arrow Indicator
@@ -241,6 +242,11 @@ Item {
                                 bottomRightRadius: 14
                                 color: Colours.tPalette.m3primaryContainer
 
+                                StateLayer {
+                                    color: Colours.palette.m3onPrimaryContainer
+                                    onClicked: root.shapeMenuOpen = !root.shapeMenuOpen
+                                }
+
                                 MaterialIcon {
                                     anchors.centerIn: parent
                                     text: "expand_more"
@@ -248,10 +254,6 @@ Item {
                                     color: Colours.palette.m3onPrimaryContainer
                                     rotation: root.shapeMenuOpen ? 180 : 0
                                     Behavior on rotation { NumberAnimation { duration: 180 } }
-                                }
-
-                                TapHandler {
-                                    onTapped: root.shapeMenuOpen = !root.shapeMenuOpen
                                 }
                             }
                         }
@@ -288,11 +290,19 @@ Item {
 
                                 readonly property bool isSelected: Colours.avatarShape === modelData.value
 
-                                color: shapeItem.isSelected
+                                color: shapeItemState.containsMouse || shapeItem.isSelected
                                     ? Colours.tPalette.m3primaryContainer
-                                    : (itemHover.hovered ? Qt.alpha(Colours.palette.m3onSurface, 0.08) : "transparent")
+                                    : "transparent"
                                 Behavior on color { ColorAnimation { duration: 100 } }
-                                HoverHandler { id: itemHover }
+
+                                StateLayer {
+                                    id: shapeItemState
+                                    onClicked: {
+                                        Colours.avatarShape = shapeItem.modelData.value;
+                                        Colours.avatarShapeName = shapeItem.modelData.name;
+                                        root.shapeMenuOpen = false;
+                                    }
+                                }
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -346,11 +356,15 @@ Item {
                     implicitHeight: 48
                     radius: 4
 
-                    color: h12Hover.hovered
+                    color: state12h.containsMouse
                         ? Colours.tPalette.m3surfaceContainerHighest
                         : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: h12Hover }
+
+                    StateLayer {
+                        id: state12h
+                        onClicked: Colours.use12Hour = !Colours.use12Hour
+                    }
 
                     // Left Text Column
                     Column {
@@ -415,10 +429,6 @@ Item {
                             }
                         }
                     }
-
-                    TapHandler {
-                        onTapped: Colours.use12Hour = !Colours.use12Hour
-                    }
                 }
 
                 // ── Row 3: Light Mode (Middle in Group) ────────────
@@ -428,11 +438,18 @@ Item {
                     implicitHeight: 48
                     radius: 4
 
-                    color: hThemeHover.hovered
+                    color: stateTheme.containsMouse
                         ? Colours.tPalette.m3surfaceContainerHighest
                         : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: hThemeHover }
+
+                    StateLayer {
+                        id: stateTheme
+                        onClicked: {
+                            const newMode = Colours.light ? "dark" : "light";
+                            Colours.setMode(newMode);
+                        }
+                    }
 
                     // Left Text Column
                     Column {
@@ -497,13 +514,6 @@ Item {
                             }
                         }
                     }
-
-                    TapHandler {
-                        onTapped: {
-                            const newMode = Colours.light ? "dark" : "light";
-                            Colours.setMode(newMode);
-                        }
-                    }
                 }
 
                 // ── Row 4: Lava Lamp Animation (Last in Appearance Group) ────
@@ -517,11 +527,15 @@ Item {
                     bottomLeftRadius: 14
                     bottomRightRadius: 14
 
-                    color: hAnimHover.hovered
+                    color: stateAnim.containsMouse
                         ? Colours.tPalette.m3surfaceContainerHighest
                         : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: hAnimHover }
+
+                    StateLayer {
+                        id: stateAnim
+                        onClicked: Colours.lavaLampEnabled = !Colours.lavaLampEnabled
+                    }
 
                     // Left Text Column
                     Column {
@@ -586,10 +600,6 @@ Item {
                             }
                         }
                     }
-
-                    TapHandler {
-                        onTapped: Colours.lavaLampEnabled = !Colours.lavaLampEnabled
-                    }
                 }
 
                 // ── Section 2 Header: Session (Visible in test mode) ─
@@ -611,17 +621,22 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 46
                     radius: 14
-                    color: hExitHover.hovered
+                    color: stateExit.containsMouse
                         ? Qt.alpha(Colours.palette.m3errorContainer, 0.70)
                         : Qt.alpha(Colours.palette.m3errorContainer, 0.40)
                     Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: hExitHover }
+
+                    StateLayer {
+                        id: stateExit
+                        color: Colours.palette.m3onErrorContainer
+                        onClicked: root.exitRequested()
+                    }
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
-                        spacing: 8
+                        anchors.leftMargin: 14
+                        anchors.rightMargin: 14
+                        spacing: 10
 
                         MaterialIcon {
                             text: "logout"
@@ -634,30 +649,31 @@ Item {
                             spacing: 1
 
                             Text {
+                                Layout.fillWidth: true
                                 text: "Exit test mode"
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 11
                                 font.weight: Font.Medium
                                 color: Colours.palette.m3onErrorContainer
+                                horizontalAlignment: Text.AlignLeft
                             }
 
                             Text {
+                                Layout.fillWidth: true
                                 text: "Close greeter preview window"
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 8
                                 color: Qt.alpha(Colours.palette.m3onErrorContainer, 0.75)
+                                horizontalAlignment: Text.AlignLeft
                             }
                         }
 
                         MaterialIcon {
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                             text: "chevron_right"
                             fontStyle.pointSize: 16
                             color: Colours.palette.m3onErrorContainer
                         }
-                    }
-
-                    TapHandler {
-                        onTapped: root.exitRequested()
                     }
                 }
             }
