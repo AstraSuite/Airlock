@@ -41,5 +41,5 @@ hl.env("HYPRCURSOR_SIZE", "14")
 
 -- Start the greeter on init
 hl.on("hyprland.start", function()
-  hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
+  hl.exec_cmd("caelestia-greeter; hyprctl dispatch exit")
 end)
