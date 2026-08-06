@@ -50,25 +50,22 @@ Item {
                 readonly property int totalCount: root.items.length
 
                 implicitHeight: 38
-                implicitWidth: isHovered ? 48 : (isPressed ? 44 : 42)
-
-                scale: isPressed ? 0.92 : 1.0
+                implicitWidth: isPressed ? 58 : 44
 
                 // ── Dynamic Corner Radius Morphing ──────────────────
-                // On hover: morphs into fully rounded pill (19px radius)
-                // On press: morphs into tighter squircle (11px radius)
+                // On hover: morphs into fully rounded pill (19px radius) without changing width
+                // On press/click: grows in width and morphs into tighter squircle (12px radius)
                 // Inactive: segmented outer pill curve and inner subtle curve
-                topLeftRadius: isHovered ? 19 : (isPressed ? 11 : (index === 0 ? 19 : 6))
-                bottomLeftRadius: isHovered ? 19 : (isPressed ? 11 : (index === 0 ? 19 : 6))
-                topRightRadius: isHovered ? 19 : (isPressed ? 11 : (index === totalCount - 1 ? 19 : 6))
-                bottomRightRadius: isHovered ? 19 : (isPressed ? 11 : (index === totalCount - 1 ? 19 : 6))
+                topLeftRadius: isHovered ? 19 : (isPressed ? 12 : (index === 0 ? 19 : 6))
+                bottomLeftRadius: isHovered ? 19 : (isPressed ? 12 : (index === 0 ? 19 : 6))
+                topRightRadius: isHovered ? 19 : (isPressed ? 12 : (index === totalCount - 1 ? 19 : 6))
+                bottomRightRadius: isHovered ? 19 : (isPressed ? 12 : (index === totalCount - 1 ? 19 : 6))
 
                 Behavior on topLeftRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 Behavior on bottomLeftRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 Behavior on topRightRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 Behavior on bottomRightRadius { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
-                Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                Behavior on implicitWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                 // ── Tonal Colors ────────────────────────────────────
                 color: isPressed
