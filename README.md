@@ -85,7 +85,22 @@ sudo chmod 755 /var/cache/caelestia-greeter
 > [!NOTE]
 > Greeter UI preferences (avatar shape, 12/24h clock, idle lava lamp animation, and last-used session per user) are automatically saved to `/var/cache/caelestia-greeter/greeter.json`. Color schemes, flavours, and dark/light modes are fetched dynamically from the `caelestia scheme` CLI and system scheme state.
 
-### 2. Configure `/etc/greetd/config.toml`
+### 2. Setting User Profile Pictures (Avatars)
+
+For user profile pictures (pfps) to work properly with greetd, the user needs to set their profile picture using the `--set-pfp` flag:
+
+```sh
+# Set profile picture for the current user
+caelestia-greeter --set-pfp /path/to/avatar.png
+
+# Or using sudo (it will automatically identify your user from SUDO_USER)
+sudo caelestia-greeter --set-pfp ~/Pictures/avatar.png
+```
+
+> [!NOTE]
+> Because greetd runs under the restricted system `greeter` user, it cannot access files inside personal home directories (such as `~/.face`). Using `--set-pfp` copies the selected image into the shared avatar store (`/var/cache/caelestia-greeter/avatars/<username>`) with the correct read permissions so the greeter can display it.
+
+### 3. Configure `/etc/greetd/config.toml`
 
 Edit `/etc/greetd/config.toml` with the following configuration:
 
@@ -98,7 +113,7 @@ command = "cage -s -- caelestia-greeter"
 user = "greeter"
 ```
 
-### 3. Multi-Monitor Configuration
+### 4. Multi-Monitor Configuration
 
 By default the greeter is shown on every connected output. The launcher
 passes monitor options through to `wlr-randr`, so you can pick which
@@ -146,7 +161,7 @@ Disabled monitors become `--off`, `preferred`/`auto` modes map to
 transform names (e.g. `3` → `270`). Copy the printed flags into the
 `command` string of `/etc/greetd/config.toml` as shown above.
 
-### 4. Enable and Start greetd
+### 5. Enable and Start greetd
 
 ```sh
 # Disable existing display manager (e.g. sddm/gdm/lightdm) if active
