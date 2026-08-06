@@ -107,19 +107,6 @@ sudo systemctl start greetd.service
 
 ---
 
-## How It Works
-
-### Session Discovery & Last Used Session
-- The greeter automatically scans `/usr/share/wayland-sessions` and `/usr/share/xsessions` for installed desktop environments.
-- When a user logs in, the selected session is saved to `/var/cache/caelestia-greeter/state.json`.
-- On boot, the greeter automatically selects the last active user and restores their preferred session.
-
-### User Avatars
-- Checks for `~/.face`, `~/.face.icon`, and `/var/lib/AccountsService/icons/<username>`.
-- Defaults to a circular Material fallback icon if no avatar is configured.
-
----
-
 ## Testing & Local Development
 
 You can test and iterate on the greeter locally without logging out:
