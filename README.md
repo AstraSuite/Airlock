@@ -76,11 +76,14 @@ If not already created by your package manager:
 sudo useradd -r -M -s /usr/bin/nologin -d /var/cache/caelestia-greeter greeter
 sudo usermod -aG video,input greeter
 
-# Setup state cache directory for session persistence
+# Setup state cache directory for persistent settings & session memory
 sudo mkdir -p /var/cache/caelestia-greeter
 sudo chown -R greeter:greeter /var/cache/caelestia-greeter
 sudo chmod 755 /var/cache/caelestia-greeter
 ```
+
+> [!NOTE]
+> Greeter UI preferences (avatar shape, 12/24h clock, idle lava lamp animation, and last-used session per user) are automatically saved to `/var/cache/caelestia-greeter/greeter.json`. Color schemes, flavours, and dark/light modes are fetched dynamically from the `caelestia scheme` CLI and system scheme state.
 
 ### 2. Configure `/etc/greetd/config.toml`
 

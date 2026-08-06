@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Caelestia.Greeter
 import "../services"
 
 // Clock matching the caelestia lockscreen design:
@@ -27,7 +28,7 @@ Item {
     function _refresh() {
         const now = new Date();
         _min = now.getMinutes();
-        if (GreeterState.use12h) {
+        if (GreeterState.use12Hour) {
             const h = now.getHours();
             _hr = h % 12 || 12;
             _ap = h >= 12 ? "PM" : "AM";
@@ -43,7 +44,7 @@ Item {
     onVisibleChanged: if (visible) root._refresh()
     Connections {
         target: GreeterState
-        function onUse12hChanged() { root._refresh() }
+        function onUse12HourChanged() { root._refresh() }
     }
 
     // Hours — primary colour, full size
@@ -71,14 +72,14 @@ Item {
             text: root._min < 10 ? "0" + root._min : "" + root._min
             color: Colours.palette.m3secondary
             font.family: root._font
-            font.pointSize: GreeterState.use12h ? root._size * 0.54 : root._size
+            font.pointSize: GreeterState.use12Hour ? root._size * 0.54 : root._size
             font.weight: Font.Normal
             font.variableAxes: { "wdth": root._wdth }
         }
 
         // AM/PM chip — only shown in 12h mode
         Rectangle {
-            visible: GreeterState.use12h
+            visible: GreeterState.use12Hour
             width: minutes.width
             height: amPmText.implicitHeight + 10
             radius: 8

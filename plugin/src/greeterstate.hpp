@@ -1,90 +1,104 @@
 #pragma once
 
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QFile>
+#include <QFileInfo>
 #include <QDir>
+#include <QFileSystemWatcher>
 #include <QSettings>
 #include <QDebug>
+#include <qqmlintegration.h>
 
-class GreeterStateHelper {
+class GreeterState : public QObject {
+    Q_OBJECT
+    QML_ELEMENT
+    QML_SINGLETON
+
+    Q_PROPERTY(bool use12Hour READ use12Hour WRITE setUse12Hour NOTIFY use12HourChanged)
+    Q_PROPERTY(int avatarShape READ avatarShape WRITE setAvatarShape NOTIFY avatarShapeChanged)
+    Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
+    Q_PROPERTY(bool lavaLampEnabled READ lavaLampEnabled WRITE setLavaLampEnabled NOTIFY lavaLampEnabledChanged)
+    Q_PROPERTY(QString lastUser READ lastUser WRITE setLastUser NOTIFY lastUserChanged)
+    Q_PROPERTY(QString stateFilePath READ stateFilePath CONSTANT)
+
 public:
-    static QStringList stateFilePaths() {
+    explicit GreeterState(QObject *parent = nullptr);
+    ~GreeterState() override = default;
+
+    static QStringList candidatePaths() {
         return {
-            QStringLiteral("/var/cache/caelestia-greeter/state.json"),
-            QStringLiteral("/var/lib/caelestia-greeter/state.json"),
-            QDir::homePath() + QStringLiteral("/.cache/caelestia-greeter/state.json"),
-            QDir::tempPath() + QStringLiteral("/caelestia-greeter-state.json")
+            QStringLiteral("/var/cache/caelestia-greeter/greeter.json"),
+            QStringLiteral("/var/lib/caelestia-greeter/greeter.json"),
+            QDir::homePath() + QStringLiteral("/.config/caelestia/greeter.json"),
+            QDir::homePath() + QStringLiteral("/.cache/caelestia-greeter/greeter.json"),
+            QDir::tempPath() + QStringLiteral("/caelestia-greeter.json")
         };
     }
 
-    static QJsonObject readState() {
-        for (const QString &path : stateFilePaths()) {
-            QFile f(path);
-            if (f.exists() && f.open(QIODevice::ReadOnly)) {
-                QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
-                if (doc.isObject()) {
-                    return doc.object();
-                }
-            }
-        }
-        return QJsonObject();
-    }
+    bool use12Hour() const { return m_use12Hour; }
+    void setUse12Hour(bool v);
 
-    static bool writeState(const QJsonObject &obj) {
-        for (const QString &path : stateFilePaths()) {
-            QFileInfo fi(path);
-            QDir().mkpath(fi.absolutePath());
-            QFile f(path);
-            if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-                f.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
-                f.close();
-                return true;
-            }
-        }
-        return false;
-    }
+    int avatarShape() const { return m_avatarShape; }
+    void setAvatarShape(int v);
 
+    QString avatarShapeName() const { return m_avatarShapeName; }
+    void setAvatarShapeName(const QString &v);
+
+    bool lavaLampEnabled() const { return m_lavaLampEnabled; }
+    void setLavaLampEnabled(bool v);
+
+    QString lastUser() const { return m_lastUser; }
+    void setLastUser(const QString &v);
+
+    QString stateFilePath() const;
+
+    Q_INVOKABLE void save();
+    Q_INVOKABLE void reload();
+
+    Q_INVOKABLE QString getLastSession(const QString &username = QString());
+    Q_INVOKABLE void saveSession(const QString &username, const QString &sessionKey);
+
+signals:
+    void use12HourChanged();
+    void avatarShapeChanged();
+    void avatarShapeNameChanged();
+    void lavaLampEnabledChanged();
+    void lastUserChanged();
+
+private:
+    void loadFromDisk();
+    QString findWritablePath() const;
+    QString findReadablePath() const;
+
+    bool m_use12Hour{false};
+    int m_avatarShape{19}; // Default Cookie9Sided
+    QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
+    bool m_lavaLampEnabled{true};
+    QString m_lastUser;
+    QJsonObject m_userSessions;
+
+    QFileSystemWatcher *m_watcher{nullptr};
+    bool m_isSaving{false};
+};
+
+class GreeterStateHelper {
+public:
     static QString getLastUser() {
-        QJsonObject state = readState();
-        return state.value(QStringLiteral("lastUser")).toString();
+        GreeterState s;
+        return s.lastUser();
     }
 
     static QString getLastSession(const QString &username = QString()) {
-        QJsonObject state = readState();
-        if (!username.isEmpty()) {
-            QJsonObject userSessions = state.value(QStringLiteral("userSessions")).toObject();
-            if (userSessions.contains(username)) {
-                QString s = userSessions.value(username).toString();
-                if (!s.isEmpty()) return s;
-            }
-
-            // Also check AccountsService user file
-            QString accPath = QStringLiteral("/var/lib/AccountsService/users/") + username;
-            if (QFile::exists(accPath)) {
-                QSettings accSettings(accPath, QSettings::IniFormat);
-                accSettings.beginGroup(QStringLiteral("User"));
-                QString sess = accSettings.value(QStringLiteral("Session")).toString();
-                if (sess.isEmpty()) {
-                    sess = accSettings.value(QStringLiteral("XSession")).toString();
-                }
-                if (!sess.isEmpty()) return sess;
-            }
-        }
-        return state.value(QStringLiteral("lastSession")).toString();
+        GreeterState s;
+        return s.getLastSession(username);
     }
 
     static void saveSession(const QString &username, const QString &sessionKey) {
-        QJsonObject state = readState();
-        if (!username.isEmpty()) {
-            state[QStringLiteral("lastUser")] = username;
-            QJsonObject userSessions = state.value(QStringLiteral("userSessions")).toObject();
-            userSessions[username] = sessionKey;
-            state[QStringLiteral("userSessions")] = userSessions;
-        }
-        state[QStringLiteral("lastSession")] = sessionKey;
-        writeState(state);
+        GreeterState s;
+        s.saveSession(username, sessionKey);
     }
 };

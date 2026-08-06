@@ -1,6 +1,5 @@
 module qs.greeter.services
 singleton Colours 1.0 Colours.qml
 singleton Greeter 1.0 Greeter.qml
-singleton GreeterState 1.0 GreeterState.qml
 singleton SystemPower 1.0 SystemPower.qml
 singleton SystemInfo 1.0 SystemInfo.qml

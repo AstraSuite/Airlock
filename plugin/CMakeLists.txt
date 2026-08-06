@@ -11,6 +11,7 @@ qt_add_qml_module(caelestia-greeter-plugin
     VERSION 1.0
     SOURCES
         src/greeterstate.hpp
+        src/greeterstate.cpp
         src/sessiondiscovery.hpp
         src/sessiondiscovery.cpp
         src/userdiscovery.hpp

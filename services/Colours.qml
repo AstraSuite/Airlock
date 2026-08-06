@@ -8,9 +8,9 @@ import M3Shapes
 import Caelestia.Greeter
 import "../components"
 
-// Reads colours from ~/.local/state/caelestia/scheme.json,
-// the same file that `caelestia scheme` writes. Watches for live changes,
-// and supports 0ms instant theme/scheme switching with unified smooth M3 easing.
+// Colours and theme state are fetched live from the Caelestia CLI and scheme files.
+// Scheme, flavour, and mode are NOT persisted in greeter.json; they are managed by caelestia scheme.
+// Greeter-specific settings (12h clock, avatar shape, lava lamp) are persisted via GreeterState.
 Singleton {
     id: root
 
@@ -19,10 +19,29 @@ Singleton {
     property string schemeName: "caelestia"
     property string flavour: "default"
     property string variant: "tonalspot"
-    property bool use12Hour: false
-    property bool lavaLampEnabled: true
-    property int avatarShape: MaterialShape.Cookie9Sided
-    property string avatarShapeName: "Cookie 9-Sided"
+
+    // Greeter-specific persisted settings
+    property bool use12Hour: GreeterState.use12Hour
+    property bool lavaLampEnabled: GreeterState.lavaLampEnabled
+    property int avatarShape: GreeterState.avatarShape
+    property string avatarShapeName: GreeterState.avatarShapeName
+
+    onUse12HourChanged: {
+        if (GreeterState.use12Hour !== use12Hour)
+            GreeterState.use12Hour = use12Hour;
+    }
+    onLavaLampEnabledChanged: {
+        if (GreeterState.lavaLampEnabled !== lavaLampEnabled)
+            GreeterState.lavaLampEnabled = lavaLampEnabled;
+    }
+    onAvatarShapeChanged: {
+        if (GreeterState.avatarShape !== avatarShape)
+            GreeterState.avatarShape = avatarShape;
+    }
+    onAvatarShapeNameChanged: {
+        if (GreeterState.avatarShapeName !== avatarShapeName)
+            GreeterState.avatarShapeName = avatarShapeName;
+    }
 
     // Full M3 palette matching caelestia-shell M3Palette with unified CAnim easing
     readonly property M3Palette palette: M3Palette {}
@@ -85,10 +104,10 @@ Singleton {
     function _load(text) {
         try {
             const s = JSON.parse(text);
-            root.schemeName = s.name ?? "caelestia";
-            root.flavour = s.flavour ?? "default";
-            root.variant = s.variant ?? "tonalspot";
-            root._mode = s.mode ?? "dark";
+            root.schemeName = s.name ?? root.schemeName;
+            root.flavour = s.flavour ?? root.flavour;
+            root.variant = s.variant ?? root.variant;
+            root._mode = s.mode ?? root._mode;
             _applyColoursMap(s.colours ?? {});
         } catch (e) {
             console.warn("caelestia-greeter: failed to parse scheme.json:", e);
@@ -97,6 +116,7 @@ Singleton {
 
     function setMode(newMode) {
         root._mode = newMode;
+
         // 1. Instantly load and apply colors from C++ SchemeDiscovery in 0ms
         const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, newMode);
         if (fastColours && Object.keys(fastColours).length > 0) {
@@ -121,11 +141,57 @@ Singleton {
         Quickshell.execDetached(["caelestia", "scheme", "set", "-n", name, "-f", flavour, "-m", targetMode]);
     }
 
+    // Process to fetch active scheme metadata directly from CLI on startup
+    Process {
+        id: fetchSchemeProc
+        command: ["caelestia", "scheme", "get", "-n"]
+        stdout: SplitParser {
+            onRead: data => {
+                const name = data.trim();
+                if (name.length > 0) root.schemeName = name;
+            }
+        }
+    }
+
+    Process {
+        id: fetchFlavourProc
+        command: ["caelestia", "scheme", "get", "-f"]
+        stdout: SplitParser {
+            onRead: data => {
+                const f = data.trim();
+                if (f.length > 0) root.flavour = f;
+            }
+        }
+    }
+
+    Process {
+        id: fetchModeProc
+        command: ["caelestia", "scheme", "get", "-m"]
+        stdout: SplitParser {
+            onRead: data => {
+                const m = data.trim();
+                if (m.length > 0) root._mode = m;
+            }
+        }
+    }
+
+    // Watch live scheme.json file updates from caelestia scheme
     FileView {
         path: `${Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")}/caelestia/scheme.json`
         watchChanges: true
         onFileChanged: reload()
         onLoaded: root._load(text())
+    }
+
+    Component.onCompleted: {
+        fetchSchemeProc.running = true;
+        fetchFlavourProc.running = true;
+        fetchModeProc.running = true;
+
+        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, root._mode);
+        if (fastColours && Object.keys(fastColours).length > 0) {
+            _applyColoursMap(fastColours);
+        }
     }
 
     // Transparent variant helpers (simple alpha overlay)
