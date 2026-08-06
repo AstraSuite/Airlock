@@ -27,11 +27,11 @@ hl.config({
     disable_hyprland_logo = true,
     force_default_wallpaper = 0,
   },
-})
-
--- Cursors
+-- Cursors (ensure cursor theme is installed in /usr/share/icons so the greeter user can access it)
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("HYPRCURSOR_SIZE", "14")
+hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("XCURSOR_SIZE", "24")
 
 -- Start the greeter on init
 hl.on("hyprland.start", function()

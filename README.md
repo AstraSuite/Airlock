@@ -180,11 +180,52 @@ hl.config({
   },
 })
 
+-- Cursors (ensure cursor theme is installed in /usr/share/icons for the greeter user)
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("XCURSOR_SIZE", "24")
+
 -- Start the greeter on init
 hl.on("hyprland.start", function()
   hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
 end)
 ```
+
+#### Customizing `/etc/greetd/hyprland.lua`
+
+When using Hyprland as the compositor, you can customize any aspect of the greeter environment in `/etc/greetd/hyprland.lua`:
+
+- **Cursor Theme & Size**:
+  Set your desired cursor theme and size using `hl.env`:
+  ```lua
+  hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+  hl.env("HYPRCURSOR_SIZE", "24")
+  hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+  hl.env("XCURSOR_SIZE", "24")
+  ```
+  > [!NOTE]
+  > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
+
+- **Keyboard Layout & Input**:
+  Configure keyboard layout, variants, repeat rates, and touchpad behaviors:
+  ```lua
+  input = {
+    kb_layout = "us,de",
+    kb_options = "grp:alt_shift_toggle,caps:escape",
+    touchpad = {
+      natural_scroll = true,
+      tap_to_click = true,
+    },
+  }
+  ```
+
+- **Monitors & Scaling**:
+  Define explicit monitor modes and scaling factors:
+  ```lua
+  hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })
+  hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "2560x0", scale = 1 })
+  ```
 
 ### 4. Multi-Monitor Configuration
 
