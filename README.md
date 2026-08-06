@@ -183,8 +183,6 @@ hl.config({
 -- Cursors (ensure cursor theme is installed in /usr/share/icons for the greeter user)
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
 hl.env("HYPRCURSOR_SIZE", "24")
-hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("XCURSOR_SIZE", "24")
 
 -- Start the greeter on init
 hl.on("hyprland.start", function()
@@ -197,12 +195,10 @@ end)
 When using Hyprland as the compositor, you can customize any aspect of the greeter environment in `/etc/greetd/hyprland.lua`:
 
 - **Cursor Theme & Size**:
-  Set your desired cursor theme and size using `hl.env`:
+  Set your desired Hyprcursor theme and size using `hl.env`:
   ```lua
   hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
   hl.env("HYPRCURSOR_SIZE", "24")
-  hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-  hl.env("XCURSOR_SIZE", "24")
   ```
   > [!NOTE]
   > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
