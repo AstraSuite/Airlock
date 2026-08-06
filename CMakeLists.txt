@@ -33,7 +33,8 @@ install(DIRECTORY components modules services assets
 install(FILES shell.qml README.md
     DESTINATION "${INSTALL_QSCONFDIR}")
 
-# Install launcher binary
-install(PROGRAMS bin/caelestia-greeter
-    DESTINATION "${CMAKE_INSTALL_BINDIR}")
+# Build the launcher binary (compiled, installed as caelestia-greeter)
+add_executable(caelestia-greeter-launcher launcher/main.cpp)
+set_target_properties(caelestia-greeter-launcher PROPERTIES OUTPUT_NAME caelestia-greeter)
+install(TARGETS caelestia-greeter-launcher RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 

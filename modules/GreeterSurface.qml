@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Services.Greetd
 import Caelestia.Greeter
 import "../services"
@@ -14,7 +13,7 @@ import "../modules"
 //
 // IDLE   — M3 Lava Lamp background (crisp shapes), Titan One chubby stacked clock, power menu top-left, settings bottom-left, schemes bottom-right
 // ACTIVE — Lava Lamp softly blurs into bokeh, Titan One clock fades, active clock/date appears in top-right, clean central login card fades in
-WlSessionLockSurface {
+Rectangle {
     id: root
 
     signal exitRequested()

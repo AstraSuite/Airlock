@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Services.Greetd
 import Caelestia.Greeter
 import "modules"
@@ -23,22 +22,18 @@ ShellRoot {
         source: Qt.resolvedUrl("assets/fonts/TitanOne-Regular.ttf")
     }
 
-    WlSessionLock {
-        id: lock
-        locked: true
+    // A plain fullscreen xdg-shell toplevel: works under cage (no
+    // ext-session-lock-v1 / layer-shell needed) and under Hyprland.
+    FloatingWindow {
+        id: greeterWindow
+        title: "Caelestia Greeter"
+        fullscreen: true
+        visible: true
 
         GreeterSurface {
-            onExitRequested: {
-                lock.locked = false;
-                exitTimer.start();
-            }
+            anchors.fill: parent
+            onExitRequested: Qt.quit()
         }
-    }
-
-    Timer {
-        id: exitTimer
-        interval: 100
-        onTriggered: Qt.quit()
     }
 
     Component.onCompleted: {

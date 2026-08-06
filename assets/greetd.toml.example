@@ -7,9 +7,15 @@
 vt = 1
 
 # Option 1: Cage (Recommended - Lightweight Kiosk Compositor)
+# Show the greeter on every connected output:
 [default_session]
 command = "cage -s -- caelestia-greeter"
 user = "greeter"
+
+# Show only on DP-2 and set its mode / position (needs wlr-randr installed):
+# [default_session]
+# command = "cage -s -- caelestia-greeter --only DP-2 --output DP-2 --mode 2560x1440@120 --pos 0,0"
+# user = "greeter"
 
 # Option 2: Cage with full binary path
 # [default_session]

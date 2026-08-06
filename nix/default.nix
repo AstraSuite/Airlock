@@ -8,6 +8,7 @@
   quickshell,
   m3shapes,
   makeWrapper,
+  wlr-randr,
 }:
 stdenv.mkDerivation {
   pname = "caelestia-greeter";
@@ -36,7 +37,7 @@ stdenv.mkDerivation {
 
   postInstall = ''
     wrapProgram $out/bin/caelestia-greeter \
-      --prefix PATH : ${lib.makeBinPath [ quickshell ]} \
+      --prefix PATH : ${lib.makeBinPath [ quickshell wlr-randr ]} \
       --prefix QML2_IMPORT_PATH : "$out/lib/qt6/qml:$QML2_IMPORT_PATH"
   '';
 
