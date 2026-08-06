@@ -23,6 +23,7 @@ public:
     QString currentUser() const;
 
     Q_INVOKABLE void reload();
+    Q_INVOKABLE void updateDefaultIndex();
 
 signals:
     void usersChanged();

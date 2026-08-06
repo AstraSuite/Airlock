@@ -8,17 +8,34 @@ import M3Shapes
 import Caelestia.Greeter
 import "../components"
 
-// Colours and theme state are fetched live from the Caelestia CLI and scheme files.
-// Scheme, flavour, and mode are NOT persisted in greeter.json; they are managed by caelestia scheme.
-// Greeter-specific settings (12h clock, avatar shape, lava lamp) are persisted via GreeterState.
+// Colours and theme state are managed directly via GreeterState and SchemeDiscovery.
+// Scheme, flavour, and mode are persisted directly in greeter.json.
+// All palette colours are loaded directly from system scheme files in 0ms without CLI subprocesses.
 Singleton {
     id: root
 
     readonly property bool light: _mode === "light"
-    property string _mode: "dark"
-    property string schemeName: "caelestia"
-    property string flavour: "default"
+    property string _mode: GreeterState.schemeMode || "dark"
+    property string schemeName: GreeterState.schemeName || "caelestia"
+    property string flavour: GreeterState.schemeFlavour || "default"
     property string variant: "tonalspot"
+
+    // Sync with GreeterState changes (e.g. from file reloads)
+    Connections {
+        target: GreeterState
+        function onSchemeNameChanged() {
+            root.schemeName = GreeterState.schemeName;
+            root.reloadColours();
+        }
+        function onSchemeFlavourChanged() {
+            root.flavour = GreeterState.schemeFlavour;
+            root.reloadColours();
+        }
+        function onSchemeModeChanged() {
+            root._mode = GreeterState.schemeMode;
+            root.reloadColours();
+        }
+    }
 
     // Greeter-specific persisted settings
     property bool use12Hour: GreeterState.use12Hour
@@ -91,39 +108,28 @@ Singleton {
     function _applyColoursMap(coloursMap) {
         if (!coloursMap) return;
         for (const [name, rawHex] of Object.entries(coloursMap)) {
-            const hex = String(rawHex).replace(/^#/, "");
+            const hex = String(rawHex).replace(/^#+/, "");
             const prop = "m3" + name.charAt(0).toUpperCase() + name.slice(1);
             const direct = "m3" + name;
-            if (root.palette.hasOwnProperty(direct))
+            if (direct in root.palette || root.palette[direct] !== undefined) {
                 root.palette[direct] = "#" + hex;
-            else if (root.palette.hasOwnProperty(prop))
+            } else if (prop in root.palette || root.palette[prop] !== undefined) {
                 root.palette[prop] = "#" + hex;
+            }
         }
     }
 
-    function _load(text) {
-        try {
-            const s = JSON.parse(text);
-            root.schemeName = s.name ?? root.schemeName;
-            root.flavour = s.flavour ?? root.flavour;
-            root.variant = s.variant ?? root.variant;
-            root._mode = s.mode ?? root._mode;
-            _applyColoursMap(s.colours ?? {});
-        } catch (e) {
-            console.warn("caelestia-greeter: failed to parse scheme.json:", e);
+    function reloadColours() {
+        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, root._mode);
+        if (fastColours && Object.keys(fastColours).length > 0) {
+            _applyColoursMap(fastColours);
         }
     }
 
     function setMode(newMode) {
         root._mode = newMode;
-
-        // 1. Instantly load and apply colors from C++ SchemeDiscovery in 0ms
-        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, newMode);
-        if (fastColours && Object.keys(fastColours).length > 0) {
-            _applyColoursMap(fastColours);
-        }
-        // 2. Persist in background via CLI without blocking the UI thread
-        Quickshell.execDetached(["caelestia", "scheme", "set", "-m", newMode]);
+        GreeterState.schemeMode = newMode;
+        reloadColours();
     }
 
     function setScheme(name, flavour, mode) {
@@ -132,66 +138,12 @@ Singleton {
         root.flavour = flavour;
         root._mode = targetMode;
 
-        // 1. Instantly load and apply colors in 0ms
-        const fastColours = SchemeDiscovery.getSchemeColours(name, flavour, targetMode);
-        if (fastColours && Object.keys(fastColours).length > 0) {
-            _applyColoursMap(fastColours);
-        }
-        // 2. Persist in background via CLI
-        Quickshell.execDetached(["caelestia", "scheme", "set", "-n", name, "-f", flavour, "-m", targetMode]);
-    }
-
-    // Process to fetch active scheme metadata directly from CLI on startup
-    Process {
-        id: fetchSchemeProc
-        command: ["caelestia", "scheme", "get", "-n"]
-        stdout: SplitParser {
-            onRead: data => {
-                const name = data.trim();
-                if (name.length > 0) root.schemeName = name;
-            }
-        }
-    }
-
-    Process {
-        id: fetchFlavourProc
-        command: ["caelestia", "scheme", "get", "-f"]
-        stdout: SplitParser {
-            onRead: data => {
-                const f = data.trim();
-                if (f.length > 0) root.flavour = f;
-            }
-        }
-    }
-
-    Process {
-        id: fetchModeProc
-        command: ["caelestia", "scheme", "get", "-m"]
-        stdout: SplitParser {
-            onRead: data => {
-                const m = data.trim();
-                if (m.length > 0) root._mode = m;
-            }
-        }
-    }
-
-    // Watch live scheme.json file updates from caelestia scheme
-    FileView {
-        path: `${Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")}/caelestia/scheme.json`
-        watchChanges: true
-        onFileChanged: reload()
-        onLoaded: root._load(text())
+        GreeterState.setScheme(name, flavour, targetMode);
+        reloadColours();
     }
 
     Component.onCompleted: {
-        fetchSchemeProc.running = true;
-        fetchFlavourProc.running = true;
-        fetchModeProc.running = true;
-
-        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, root._mode);
-        if (fastColours && Object.keys(fastColours).length > 0) {
-            _applyColoursMap(fastColours);
-        }
+        reloadColours();
     }
 
     // All surfaces opaque (tPalette aliases palette)

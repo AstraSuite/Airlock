@@ -22,13 +22,39 @@ Item {
     property string pendingPassword: ""
     property bool   testSimulating: false
     property int    testAuthDelay: 2500
-    property int    currentSessionIndex: SessionDiscovery.defaultIndex
-    property int    currentUserIndex: UserDiscovery.defaultIndex
+    property int currentSessionIndex: SessionDiscovery.defaultIndex
+    property int currentUserIndex: UserDiscovery.defaultIndex
 
     readonly property var _user: UserDiscovery.users.length > 0 && currentUserIndex >= 0 && currentUserIndex < UserDiscovery.users.length
         ? UserDiscovery.users[root.currentUserIndex] : null
     readonly property var _session: SessionDiscovery.sessions.length > 0 && currentSessionIndex >= 0 && currentSessionIndex < SessionDiscovery.sessions.length
         ? SessionDiscovery.sessions[root.currentSessionIndex] : null
+
+    function syncUserSession() {
+        if (root._user) {
+            root.currentSessionIndex = SessionDiscovery.sessionIndexForUser(root._user.username);
+        } else {
+            root.currentSessionIndex = SessionDiscovery.defaultIndex;
+        }
+    }
+
+    onCurrentUserIndexChanged: syncUserSession()
+    Component.onCompleted: syncUserSession()
+
+    Connections {
+        target: UserDiscovery
+        function onDefaultIndexChanged() {
+            root.currentUserIndex = UserDiscovery.defaultIndex;
+            root.syncUserSession();
+        }
+    }
+
+    Connections {
+        target: SessionDiscovery
+        function onDefaultIndexChanged() {
+            root.syncUserSession();
+        }
+    }
 
     implicitWidth: 350
     implicitHeight: loginCard.implicitHeight
@@ -161,7 +187,7 @@ Item {
             const s = root._session;
             if (s?.exec) {
                 if (root._user) {
-                    SessionDiscovery.saveLastSession(root._user.username, s.key || s.file || s.name);
+                    GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
                 }
                 Greetd.launch(s.exec.split(" "));
             }
@@ -311,7 +337,7 @@ Item {
                     root.currentSessionIndex = idx;
                     const s = SessionDiscovery.sessions[idx];
                     if (s && root._user) {
-                        SessionDiscovery.saveLastSession(root._user.username, s.key || s.file || s.name);
+                        GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
                     }
                 }
             }
@@ -354,7 +380,13 @@ Item {
             root.currentUserIndex = idx;
             const user = UserDiscovery.users[idx];
             if (user) {
-                root.currentSessionIndex = SessionDiscovery.sessionIndexForUser(user.username);
+                GreeterState.lastUser = user.username;
+                const sessIdx = SessionDiscovery.sessionIndexForUser(user.username);
+                root.currentSessionIndex = sessIdx;
+                const sess = SessionDiscovery.sessions[sessIdx];
+                if (sess) {
+                    GreeterState.saveSession(user.username, sess.key || sess.file || sess.name);
+                }
             }
             root.passwordBuffer = "";
             root.pendingPassword = "";

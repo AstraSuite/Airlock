@@ -20,7 +20,7 @@ Item {
     property bool menuOpen: false
 
     implicitWidth: splitRow.implicitWidth
-    implicitHeight: 36
+    implicitHeight: 32
 
     Row {
         id: splitRow
@@ -30,17 +30,17 @@ Item {
         // ── Left Segment: Action / Session Toggle ─────────────────────
         Rectangle {
             id: leftBtn
-            implicitHeight: 36
+            implicitHeight: 32
             implicitWidth: contentRow.implicitWidth + 24
 
-            topLeftRadius: 18
-            bottomLeftRadius: 18
+            topLeftRadius: 16
+            bottomLeftRadius: 16
             topRightRadius: 4
             bottomRightRadius: 4
 
             color: leftHover.hovered
-                ? Colours.tPalette.m3secondaryContainer
-                : Colours.tPalette.m3surfaceContainer
+                ? Colours.tPalette.m3primaryContainer
+                : Colours.tPalette.m3surfaceContainerHigh
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -72,7 +72,7 @@ Item {
                     MaterialIcon {
                         anchors.centerIn: parent
                         text: root.currentSession?.type === "Wayland" ? "layers" : "desktop_windows"
-                        fontStyle.pointSize: 15
+                        fontStyle.pointSize: 14
                         color: Colours.palette.m3primary
                     }
                 }
@@ -90,20 +90,20 @@ Item {
         // ── Right Segment: Expand / Dropdown Trigger ──────────────────
         Rectangle {
             id: rightBtn
-            implicitWidth: 36
-            implicitHeight: 36
+            implicitWidth: 32
+            implicitHeight: 32
 
-            topRightRadius: 18
-            bottomRightRadius: 18
-            topLeftRadius: root.menuOpen ? 18 : 4
-            bottomLeftRadius: root.menuOpen ? 18 : 4
+            topRightRadius: 16
+            bottomRightRadius: 16
+            topLeftRadius: root.menuOpen ? 16 : 4
+            bottomLeftRadius: root.menuOpen ? 16 : 4
 
             Behavior on topLeftRadius { NumberAnimation { duration: 150 } }
             Behavior on bottomLeftRadius { NumberAnimation { duration: 150 } }
 
             color: rightHover.hovered || root.menuOpen
-                ? Colours.tPalette.m3secondaryContainer
-                : Colours.tPalette.m3surfaceContainer
+                ? Colours.tPalette.m3primaryContainer
+                : Colours.tPalette.m3surfaceContainerHigh
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -120,7 +120,7 @@ Item {
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: root.menuOpen ? 0 : -1
                 text: "expand_more"
-                fontStyle.pointSize: 16
+                fontStyle.pointSize: 15
                 color: root.menuOpen ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
                 rotation: root.menuOpen ? 180 : 0
                 Behavior on rotation { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }

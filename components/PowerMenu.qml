@@ -16,22 +16,17 @@ Item {
     readonly property var items: [
         {
             icon: "power_settings_new",
-            tip: "Shut Down",
             act: function() { SystemPower.poweroff(); }
         },
         {
             icon: "restart_alt",
-            tip: "Reboot",
             act: function() { SystemPower.reboot(); }
         },
         {
             icon: "developer_board",
-            tip: "Reboot to UEFI / BIOS",
             act: function() { SystemPower.rebootToUefi(); }
         }
     ]
-
-    property int hoveredIndex: -1
 
     Row {
         id: segRow
@@ -79,13 +74,6 @@ Item {
                 HoverHandler {
                     id: hoverHandler
                     cursorShape: Qt.PointingHandCursor
-                    onHoveredChanged: {
-                        if (hovered) {
-                            root.hoveredIndex = segBtn.index;
-                        } else if (root.hoveredIndex === segBtn.index) {
-                            root.hoveredIndex = -1;
-                        }
-                    }
                 }
 
                 TapHandler {
@@ -104,33 +92,6 @@ Item {
                     Behavior on color { ColorAnimation { duration: 160 } }
                 }
             }
-        }
-    }
-
-    // ── Floating Action Tooltip ──────────────────────────────────────
-    Rectangle {
-        id: tooltipPill
-        anchors.top: segRow.bottom
-        anchors.topMargin: 8
-        anchors.left: segRow.left
-        implicitWidth: tipText.implicitWidth + 16
-        implicitHeight: 24
-        radius: 12
-        color: Colours.tPalette.m3surfaceContainerHighest
-
-        visible: opacity > 0
-        opacity: root.hoveredIndex >= 0 ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-        Text {
-            id: tipText
-            anchors.centerIn: parent
-            text: root.hoveredIndex >= 0 && root.hoveredIndex < root.items.length
-                ? root.items[root.hoveredIndex].tip : ""
-            font.family: "Google Sans Flex"
-            font.pointSize: 9
-            font.weight: Font.Medium
-            color: Colours.palette.m3onSurface
         }
     }
 }

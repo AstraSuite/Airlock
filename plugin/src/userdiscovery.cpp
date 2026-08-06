@@ -11,6 +11,7 @@ UserDiscovery::UserDiscovery(QObject *parent)
     : QObject(parent)
 {
     reload();
+    connect(GreeterState::instance(), &GreeterState::lastUserChanged, this, &UserDiscovery::updateDefaultIndex);
 }
 
 QString UserDiscovery::currentUser() const
@@ -21,13 +22,49 @@ QString UserDiscovery::currentUser() const
     return m_users.at(m_defaultIndex).toMap().value(QStringLiteral("username")).toString();
 }
 
+void UserDiscovery::updateDefaultIndex()
+{
+    if (m_users.isEmpty()) return;
+
+    const QString lastUser = GreeterStateHelper::getLastUser();
+    const QString envUser = QProcessEnvironment::systemEnvironment().value(QStringLiteral("USER"));
+
+    int targetIdx = -1;
+    if (!lastUser.isEmpty()) {
+        for (int i = 0; i < m_users.size(); ++i) {
+            if (m_users.at(i).toMap().value(QStringLiteral("username")).toString() == lastUser) {
+                targetIdx = i;
+                break;
+            }
+        }
+    }
+
+    if (targetIdx == -1 && !envUser.isEmpty()) {
+        for (int i = 0; i < m_users.size(); ++i) {
+            if (m_users.at(i).toMap().value(QStringLiteral("username")).toString() == envUser) {
+                targetIdx = i;
+                break;
+            }
+        }
+    }
+
+    if (targetIdx == -1) {
+        targetIdx = 0;
+    }
+
+    if (m_defaultIndex != targetIdx) {
+        m_defaultIndex = targetIdx;
+        emit defaultIndexChanged();
+        emit currentUserChanged();
+    }
+}
+
 void UserDiscovery::reload()
 {
     m_users.clear();
     m_defaultIndex = 0;
 
     const QString envUser = QProcessEnvironment::systemEnvironment().value(QStringLiteral("USER"));
-    const QString lastUser = GreeterStateHelper::getLastUser();
 
     QFile passwdFile(QStringLiteral("/etc/passwd"));
     if (passwdFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -55,10 +92,6 @@ void UserDiscovery::reload()
                 realName = username;
             }
 
-            // Find avatar: check the shared avatar store first (written by
-            // `caelestia-greeter --set-pfp`, readable even when the home
-            // directory is not traversable), then /home/<username>, then the
-            // passwd home dir, then the AccountsService icon store.
             const QString cacheAvatar = QStringLiteral("/var/cache/caelestia-greeter/avatars/") + username;
             const QString avatarBase = QStringLiteral("/home/") + username;
             QString avatarPath;
@@ -86,7 +119,6 @@ void UserDiscovery::reload()
     }
 
     if (m_users.isEmpty()) {
-        // Fallback user if /etc/passwd parsing yields none
         const QString fallbackUser = envUser.isEmpty() ? QStringLiteral("user") : envUser;
         QVariantMap userMap;
         userMap[QStringLiteral("username")] = fallbackUser;
@@ -96,33 +128,7 @@ void UserDiscovery::reload()
         m_users.append(userMap);
     }
 
-    // Determine default user: lastUser in state -> env USER -> first user (index 0)
-    int targetIdx = -1;
-    if (!lastUser.isEmpty()) {
-        for (int i = 0; i < m_users.size(); ++i) {
-            if (m_users.at(i).toMap().value(QStringLiteral("username")).toString() == lastUser) {
-                targetIdx = i;
-                break;
-            }
-        }
-    }
-
-    if (targetIdx == -1 && !envUser.isEmpty()) {
-        for (int i = 0; i < m_users.size(); ++i) {
-            if (m_users.at(i).toMap().value(QStringLiteral("username")).toString() == envUser) {
-                targetIdx = i;
-                break;
-            }
-        }
-    }
-
-    if (targetIdx >= 0) {
-        m_defaultIndex = targetIdx;
-    } else {
-        m_defaultIndex = 0;
-    }
+    updateDefaultIndex();
 
     emit usersChanged();
-    emit defaultIndexChanged();
-    emit currentUserChanged();
 }

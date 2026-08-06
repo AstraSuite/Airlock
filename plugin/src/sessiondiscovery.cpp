@@ -9,6 +9,54 @@ SessionDiscovery::SessionDiscovery(QObject *parent)
     : QObject(parent)
 {
     reload();
+    connect(GreeterState::instance(), &GreeterState::lastUserChanged, this, &SessionDiscovery::updateDefaultIndex);
+}
+
+void SessionDiscovery::updateDefaultIndex()
+{
+    if (m_sessions.isEmpty()) return;
+
+    const QString lastUser = GreeterStateHelper::getLastUser();
+    const QString lastSessionKey = GreeterStateHelper::getLastSession(lastUser);
+
+    int foundIdx = -1;
+    if (!lastSessionKey.isEmpty()) {
+        foundIdx = indexOfSession(lastSessionKey);
+    }
+
+    if (foundIdx >= 0 && foundIdx < m_sessions.size()) {
+        if (m_defaultIndex != foundIdx) {
+            m_defaultIndex = foundIdx;
+            emit defaultIndexChanged();
+        }
+    } else {
+        int hyprIdx = -1;
+        int firstWaylandIdx = -1;
+        for (int i = 0; i < m_sessions.size(); ++i) {
+            const QVariantMap item = m_sessions.at(i).toMap();
+            const QString key = item.value(QStringLiteral("key")).toString().toLower();
+            const QString type = item.value(QStringLiteral("type")).toString();
+
+            if (key.contains(QStringLiteral("hyprland")) && hyprIdx == -1) {
+                hyprIdx = i;
+            }
+            if (type == QStringLiteral("Wayland") && firstWaylandIdx == -1) {
+                firstWaylandIdx = i;
+            }
+        }
+
+        int target = 0;
+        if (hyprIdx != -1) {
+            target = hyprIdx;
+        } else if (firstWaylandIdx != -1) {
+            target = firstWaylandIdx;
+        }
+
+        if (m_defaultIndex != target) {
+            m_defaultIndex = target;
+            emit defaultIndexChanged();
+        }
+    }
 }
 
 void SessionDiscovery::reload()
@@ -30,45 +78,9 @@ void SessionDiscovery::reload()
         m_sessions.append(fallback);
     }
 
-    // Default to last used session for the last active user
-    const QString lastUser = GreeterStateHelper::getLastUser();
-    const QString lastSessionKey = GreeterStateHelper::getLastSession(lastUser);
-
-    int foundIdx = -1;
-    if (!lastSessionKey.isEmpty()) {
-        foundIdx = indexOfSession(lastSessionKey);
-    }
-
-    if (foundIdx >= 0 && foundIdx < m_sessions.size()) {
-        m_defaultIndex = foundIdx;
-    } else {
-        // Fallback priority: Hyprland -> First Wayland session -> Index 0
-        int hyprIdx = -1;
-        int firstWaylandIdx = -1;
-        for (int i = 0; i < m_sessions.size(); ++i) {
-            const QVariantMap item = m_sessions.at(i).toMap();
-            const QString key = item.value(QStringLiteral("key")).toString().toLower();
-            const QString type = item.value(QStringLiteral("type")).toString();
-
-            if (key.contains(QStringLiteral("hyprland")) && hyprIdx == -1) {
-                hyprIdx = i;
-            }
-            if (type == QStringLiteral("Wayland") && firstWaylandIdx == -1) {
-                firstWaylandIdx = i;
-            }
-        }
-
-        if (hyprIdx != -1) {
-            m_defaultIndex = hyprIdx;
-        } else if (firstWaylandIdx != -1) {
-            m_defaultIndex = firstWaylandIdx;
-        } else {
-            m_defaultIndex = 0;
-        }
-    }
+    updateDefaultIndex();
 
     emit sessionsChanged();
-    emit defaultIndexChanged();
 }
 
 int SessionDiscovery::indexOfSession(const QString &sessionKey)
@@ -77,19 +89,33 @@ int SessionDiscovery::indexOfSession(const QString &sessionKey)
         return -1;
     }
 
-    const QString cleanKey = sessionKey.toLower().remove(QStringLiteral(".desktop"));
+    const QString cleanKey = sessionKey.toLower().remove(QStringLiteral(".desktop")).trimmed();
 
+    // 1. Exact match pass (key, filename base, name, or exec)
     for (int i = 0; i < m_sessions.size(); ++i) {
         const QVariantMap item = m_sessions.at(i).toMap();
-        const QString k = item.value(QStringLiteral("key")).toString().toLower();
-        const QString f = item.value(QStringLiteral("file")).toString().toLower().remove(QStringLiteral(".desktop"));
-        const QString n = item.value(QStringLiteral("name")).toString().toLower();
-        const QString e = item.value(QStringLiteral("exec")).toString().toLower();
+        const QString k = item.value(QStringLiteral("key")).toString().toLower().trimmed();
+        const QString f = item.value(QStringLiteral("file")).toString().toLower().remove(QStringLiteral(".desktop")).trimmed();
+        const QString n = item.value(QStringLiteral("name")).toString().toLower().trimmed();
+        const QString e = item.value(QStringLiteral("exec")).toString().toLower().trimmed();
 
-        if (k == cleanKey || f == cleanKey || n == cleanKey || e == cleanKey || k.startsWith(cleanKey)) {
+        if (k == cleanKey || f == cleanKey || n == cleanKey || e == cleanKey) {
             return i;
         }
     }
+
+    // 2. Prefix / partial match fallback
+    for (int i = 0; i < m_sessions.size(); ++i) {
+        const QVariantMap item = m_sessions.at(i).toMap();
+        const QString k = item.value(QStringLiteral("key")).toString().toLower().trimmed();
+        const QString f = item.value(QStringLiteral("file")).toString().toLower().remove(QStringLiteral(".desktop")).trimmed();
+        const QString n = item.value(QStringLiteral("name")).toString().toLower().trimmed();
+
+        if (k.startsWith(cleanKey) || f.startsWith(cleanKey) || n.contains(cleanKey)) {
+            return i;
+        }
+    }
+
     return -1;
 }
 

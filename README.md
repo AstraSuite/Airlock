@@ -102,7 +102,25 @@ sudo caelestia-greeter --set-pfp ~/Pictures/avatar.png
 
 ### 3. Configure `/etc/greetd/config.toml`
 
-Edit `/etc/greetd/config.toml` with the following configuration:
+You can run `caelestia-greeter` inside either **Cage** (lightweight kiosk compositor) or **Hyprland**.
+
+#### Quick Setup via `--kiosk`
+
+You can automatically generate the greetd configuration files using the `-k` / `--kiosk` flag:
+
+```sh
+# Automatic setup for Cage:
+sudo caelestia-greeter -k cage
+
+# Or automatic setup for Hyprland:
+sudo caelestia-greeter -k hyprland
+```
+
+#### Manual Configuration
+
+##### Option A: Using Cage (Recommended)
+
+In `/etc/greetd/config.toml`:
 
 ```toml
 [terminal]
@@ -111,6 +129,56 @@ vt = 1
 [default_session]
 command = "cage -s -- caelestia-greeter"
 user = "greeter"
+```
+
+#### Option B: Using Hyprland
+
+In `/etc/greetd/config.toml`:
+
+```toml
+[terminal]
+vt = 1
+
+[default_session]
+command = "start-hyprland -- -c /etc/greetd/hyprland.lua"
+user = "greeter"
+```
+
+Create `/etc/greetd/hyprland.lua` (an example is provided in [`assets/hyprland.lua.example`](assets/hyprland.lua.example)):
+
+```lua
+-- Default monitor conf
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+
+-- Default options
+hl.config({
+  animations = { enabled = false },
+  decoration = {
+    blur = { enabled = false },
+    shadow = { enabled = false },
+  },
+  input = {
+    kb_layout = "us", -- Change as needed
+    numlock_by_default = false,
+    repeat_delay = 250,
+    repeat_rate = 35,
+    touchpad = {
+      natural_scroll = true,
+      disable_while_typing = true,
+      scroll_factor = 0.3,
+    },
+  },
+  misc = {
+    disable_autoreload = true,
+    disable_hyprland_logo = true,
+    force_default_wallpaper = 0,
+  },
+})
+
+-- Start the greeter on init
+hl.on("hyprland.start", function()
+  hl.exec_cmd("caelestia-greeter; hyprctl dispatch 'hl.dsp.exit()'")
+end)
 ```
 
 ### 4. Multi-Monitor Configuration

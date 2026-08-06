@@ -21,71 +21,26 @@ Item {
 
     property real animDriver: 0
     property string searchText: ""
-    property string currentSchemeName: ""
-    property string currentFlavour: ""
+    readonly property string currentSchemeName: Colours.schemeName
+    readonly property string currentFlavour: Colours.flavour
 
-    // Raw list of schemes from `caelestia scheme list`
-    property var allSchemes: []
+    // Raw list of schemes from SchemeDiscovery C++ plugin
+    property var allSchemes: SchemeDiscovery.schemes
 
     // Filtered schemes based on search text
     readonly property var filteredSchemes: {
         const query = searchText.trim().toLowerCase();
-        if (query.length === 0) return allSchemes;
-        return allSchemes.filter(s =>
+        const list = allSchemes || [];
+        if (query.length === 0) return list;
+        return list.filter(s =>
             (s.name && s.name.toLowerCase().includes(query)) ||
-            (s.flavour && s.flavour.toLowerCase().includes(query))
+            (s.flavour && s.flavour.toLowerCase().includes(query)) ||
+            (s.displayName && s.displayName.toLowerCase().includes(query))
         );
     }
 
     function reloadSchemes() {
-        listProc.running = true;
-        currentProc.running = true;
-    }
-
-    Process {
-        id: listProc
-        running: true
-        command: ["caelestia", "scheme", "list"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const data = JSON.parse(text);
-                    const list = [];
-                    for (const [name, flavours] of Object.entries(data)) {
-                        for (const [flavour, colours] of Object.entries(flavours)) {
-                            list.push({
-                                name: name,
-                                flavour: flavour,
-                                colours: colours
-                            });
-                        }
-                    }
-                    list.sort((a, b) => String(a.name + a.flavour).localeCompare(String(b.name + b.flavour)));
-                    root.allSchemes = list;
-                } catch (e) {
-                    console.warn("Failed to parse scheme list:", e);
-                }
-            }
-        }
-    }
-
-    Process {
-        id: currentProc
-        running: true
-        command: ["caelestia", "scheme", "get", "-nfv"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = text.trim().split("\n");
-                if (parts.length >= 2) {
-                    root.currentSchemeName = parts[0];
-                    root.currentFlavour = parts[1];
-                }
-            }
-        }
-    }
-
-    Process {
-        id: applyProc
+        SchemeDiscovery.reload();
     }
 
     BlobGroup {
@@ -188,9 +143,7 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                root.currentSchemeName = schemeRow.modelData.name;
-                                root.currentFlavour = schemeRow.modelData.flavour;
-                                Colours.setScheme(schemeRow.modelData.name, schemeRow.modelData.flavour);
+                                Colours.setScheme(schemeRow.modelData.name, schemeRow.modelData.flavour, Colours.light ? "light" : "dark");
                             }
                         }
 
@@ -203,13 +156,18 @@ Item {
                             implicitWidth: 26
                             implicitHeight: 26
 
+                            function safeHex(val, fallback) {
+                                if (!val) return fallback;
+                                const s = String(val).trim();
+                                if (!s) return fallback;
+                                return s.startsWith("#") ? s : ("#" + s);
+                            }
+
                             Rectangle {
                                 id: swatchBase
                                 anchors.fill: parent
                                 radius: width / 2
-                                color: schemeRow.modelData.colours?.surface
-                                    ? `#${schemeRow.modelData.colours.surface}`
-                                    : Colours.palette.m3surface
+                                color: swatchContainer.safeHex(schemeRow.modelData.colours?.surface, Colours.palette.m3surface)
 
                                 Item {
                                     anchors.top: parent.top
@@ -223,9 +181,7 @@ Item {
                                         height: swatchContainer.height
                                         radius: width / 2
                                         anchors.right: parent.right
-                                        color: schemeRow.modelData.colours?.primary
-                                            ? `#${schemeRow.modelData.colours.primary}`
-                                            : Colours.palette.m3primary
+                                        color: swatchContainer.safeHex(schemeRow.modelData.colours?.primary, Colours.palette.m3primary)
                                     }
                                 }
                             }

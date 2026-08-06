@@ -269,6 +269,145 @@ int setPfp(std::string source, const std::string& user) {
     return 0;
 }
 
+// Finds an asset file on disk across installed paths and local relative paths.
+std::string findAssetPath(const std::string& filename) {
+    std::vector<std::string> candidates = {
+        "/etc/xdg/quickshell/caelestia-greeter/assets/" + filename,
+        "./assets/" + filename,
+        "../assets/" + filename,
+        "/usr/share/caelestia-greeter/assets/" + filename,
+        "/usr/local/share/caelestia-greeter/assets/" + filename
+    };
+
+    char exePath[PATH_MAX];
+    ssize_t len = ::readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    if (len > 0) {
+        exePath[len] = '\0';
+        std::string exeDir = dirName(exePath);
+        candidates.push_back(exeDir + "/assets/" + filename);
+        candidates.push_back(exeDir + "/../assets/" + filename);
+        candidates.push_back(exeDir + "/../etc/xdg/quickshell/caelestia-greeter/assets/" + filename);
+    }
+
+    for (const auto& path : candidates) {
+        if (isFile(path)) {
+            return path;
+        }
+    }
+    return "";
+}
+
+// Reads an asset file completely from disk.
+std::string readAssetFile(const std::string& filename) {
+    const std::string path = findAssetPath(filename);
+    if (path.empty()) {
+        std::fprintf(stderr, "caelestia-greeter: could not find asset file '%s'\n", filename.c_str());
+        return "";
+    }
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        std::fprintf(stderr, "caelestia-greeter: could not open '%s' for reading\n", path.c_str());
+        return "";
+    }
+    std::stringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+// Configures greetd for a kiosk compositor (cage or hyprland).
+int configureKiosk(std::string compositor) {
+    std::string compLower;
+    for (char c : compositor) {
+        compLower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+
+    if (compLower != "cage" && compLower != "hyprland") {
+        std::fprintf(stderr, "caelestia-greeter: unknown kiosk compositor '%s' (choose 'cage' or 'hyprland')\n", compositor.c_str());
+        return 1;
+    }
+
+    const std::string greetdDir = "/etc/greetd";
+    if (!mkdirs(greetdDir)) {
+        std::fprintf(stderr, "caelestia-greeter: could not create '%s' (try running with sudo)\n", greetdDir.c_str());
+        return 1;
+    }
+
+    const std::string tomlPath = greetdDir + "/config.toml";
+
+    if (compLower == "cage") {
+        const std::string tomlContent = readAssetFile("greetd.toml.example");
+        if (tomlContent.empty()) {
+            return 1;
+        }
+
+        std::ofstream out(tomlPath, std::ios::trunc);
+        if (!out) {
+            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
+            return 1;
+        }
+        out << tomlContent;
+        out.close();
+        if (!out) {
+            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", tomlPath.c_str());
+            return 1;
+        }
+        ::chmod(tomlPath.c_str(), 0644);
+        std::printf("caelestia-greeter: configured greetd for Cage kiosk (%s)\n", tomlPath.c_str());
+        return 0;
+    }
+
+    if (compLower == "hyprland") {
+        std::string tomlContent = readAssetFile("greetd.toml.example");
+        if (tomlContent.empty()) {
+            return 1;
+        }
+
+        const size_t cmdPos = tomlContent.find("command = ");
+        if (cmdPos != std::string::npos) {
+            const size_t endLine = tomlContent.find('\n', cmdPos);
+            tomlContent.replace(cmdPos, (endLine == std::string::npos ? tomlContent.size() : endLine) - cmdPos,
+                                "command = \"start-hyprland -- -c /etc/greetd/hyprland.lua\"");
+        }
+
+        std::ofstream out(tomlPath, std::ios::trunc);
+        if (!out) {
+            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
+            return 1;
+        }
+        out << tomlContent;
+        out.close();
+        if (!out) {
+            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", tomlPath.c_str());
+            return 1;
+        }
+        ::chmod(tomlPath.c_str(), 0644);
+
+        const std::string luaPath = greetdDir + "/hyprland.lua";
+        const std::string luaContent = readAssetFile("hyprland.lua.example");
+        if (luaContent.empty()) {
+            return 1;
+        }
+
+        std::ofstream luaOut(luaPath, std::ios::trunc);
+        if (!luaOut) {
+            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", luaPath.c_str());
+            return 1;
+        }
+        luaOut << luaContent;
+        luaOut.close();
+        if (!luaOut) {
+            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", luaPath.c_str());
+            return 1;
+        }
+        ::chmod(luaPath.c_str(), 0644);
+
+        std::printf("caelestia-greeter: configured greetd for Hyprland (%s and %s)\n", tomlPath.c_str(), luaPath.c_str());
+        return 0;
+    }
+
+    return 0;
+}
+
 // Lists connected output names from `wlr-randr` ("NAME \"desc\"" lines),
 // with retries for compositor startup delay.
 std::vector<std::string> listOutputs() {
@@ -521,6 +660,11 @@ void printUsage() {
         "\n"
         "Other modes:\n"
         "\n"
+        "  --kiosk COMPOSITOR | -k COMPOSITOR\n"
+        "                           configure greetd (/etc/greetd/config.toml) for\n"
+        "                           the specified kiosk compositor ('cage' or 'hyprland');\n"
+        "                           run with sudo.\n"
+        "\n"
         "  --set-pfp FILE            copy FILE into the shared avatar store\n"
         "                           (/var/cache/caelestia-greeter/avatars/<user>)\n"
         "                           as the profile picture for the current user;\n"
@@ -716,6 +860,8 @@ int main(int argc, char** argv) {
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return 0;
+        } else if (arg == "--kiosk" || arg == "-k") {
+            return configureKiosk(takeValue());
         } else if (arg == "--set-pfp") {
             return setPfp(takeValue(), currentUser());
         } else if (arg == "--convert" || arg == "-c") {

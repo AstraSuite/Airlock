@@ -48,10 +48,6 @@ Item {
         { name: "Oval",           value: MaterialShape.Oval }
     ]
 
-    Process {
-        id: modeProc
-    }
-
     BlobGroup {
         id: blobGroup
         color: Colours.tPalette.m3surfaceContainer

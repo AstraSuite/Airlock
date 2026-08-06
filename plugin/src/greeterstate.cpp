@@ -7,10 +7,24 @@
 #include <QSettings>
 #include <QDebug>
 
+GreeterState *GreeterState::s_instance = nullptr;
+
+GreeterState *GreeterState::instance()
+{
+    if (!s_instance) {
+        s_instance = new GreeterState();
+    }
+    return s_instance;
+}
+
 GreeterState::GreeterState(QObject *parent)
     : QObject(parent)
     , m_watcher(new QFileSystemWatcher(this))
 {
+    if (!s_instance) {
+        s_instance = this;
+    }
+
     loadFromDisk();
 
     const QString path = stateFilePath();
@@ -26,6 +40,13 @@ GreeterState::GreeterState(QObject *parent)
             m_watcher->addPath(changedPath);
         }
     });
+}
+
+GreeterState::~GreeterState()
+{
+    if (s_instance == this) {
+        s_instance = nullptr;
+    }
 }
 
 QString GreeterState::stateFilePath() const
@@ -101,6 +122,20 @@ void GreeterState::loadFromDisk()
     if (s.contains(QStringLiteral("lavaLampEnabled"))) {
         m_lavaLampEnabled = s.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
     }
+
+    if (s.contains(QStringLiteral("schemeName"))) {
+        m_schemeName = s.value(QStringLiteral("schemeName")).toString(m_schemeName);
+    }
+    if (s.contains(QStringLiteral("schemeFlavour"))) {
+        m_schemeFlavour = s.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
+    } else if (s.contains(QStringLiteral("flavour"))) {
+        m_schemeFlavour = s.value(QStringLiteral("flavour")).toString(m_schemeFlavour);
+    }
+    if (s.contains(QStringLiteral("schemeMode"))) {
+        m_schemeMode = s.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
+    } else if (s.contains(QStringLiteral("mode"))) {
+        m_schemeMode = s.value(QStringLiteral("mode")).toString(m_schemeMode);
+    }
 }
 
 void GreeterState::save()
@@ -120,6 +155,9 @@ void GreeterState::save()
     s[QStringLiteral("avatarShape")] = m_avatarShape;
     s[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
     s[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
+    s[QStringLiteral("schemeName")] = m_schemeName;
+    s[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
+    s[QStringLiteral("schemeMode")] = m_schemeMode;
 
     root[QStringLiteral("settings")] = s;
 
@@ -129,7 +167,9 @@ void GreeterState::save()
     QFile f(targetPath);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         f.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+        f.flush();
         f.close();
+        QFile::setPermissions(targetPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadGroup | QFileDevice::ReadOther);
     }
 
     if (m_watcher && !m_watcher->files().contains(targetPath) && QFile::exists(targetPath)) {
@@ -147,6 +187,9 @@ void GreeterState::reload()
     emit avatarShapeNameChanged();
     emit lavaLampEnabledChanged();
     emit lastUserChanged();
+    emit schemeNameChanged();
+    emit schemeFlavourChanged();
+    emit schemeModeChanged();
 }
 
 void GreeterState::setUse12Hour(bool v)
@@ -189,16 +232,64 @@ void GreeterState::setLastUser(const QString &v)
     save();
 }
 
+void GreeterState::setSchemeName(const QString &v)
+{
+    if (m_schemeName == v) return;
+    m_schemeName = v;
+    emit schemeNameChanged();
+    save();
+}
+
+void GreeterState::setSchemeFlavour(const QString &v)
+{
+    if (m_schemeFlavour == v) return;
+    m_schemeFlavour = v;
+    emit schemeFlavourChanged();
+    save();
+}
+
+void GreeterState::setSchemeMode(const QString &v)
+{
+    if (m_schemeMode == v) return;
+    m_schemeMode = v;
+    emit schemeModeChanged();
+    save();
+}
+
+void GreeterState::setScheme(const QString &name, const QString &flavour, const QString &mode)
+{
+    bool changed = false;
+    if (!name.isEmpty() && m_schemeName != name) {
+        m_schemeName = name;
+        emit schemeNameChanged();
+        changed = true;
+    }
+    if (!flavour.isEmpty() && m_schemeFlavour != flavour) {
+        m_schemeFlavour = flavour;
+        emit schemeFlavourChanged();
+        changed = true;
+    }
+    if (!mode.isEmpty() && m_schemeMode != mode) {
+        m_schemeMode = mode;
+        emit schemeModeChanged();
+        changed = true;
+    }
+    if (changed) {
+        save();
+    }
+}
+
 QString GreeterState::getLastSession(const QString &username)
 {
-    if (!username.isEmpty()) {
-        if (m_userSessions.contains(username)) {
-            const QString sess = m_userSessions.value(username).toString();
+    const QString user = username.isEmpty() ? m_lastUser : username;
+    if (!user.isEmpty()) {
+        if (m_userSessions.contains(user)) {
+            const QString sess = m_userSessions.value(user).toString();
             if (!sess.isEmpty()) return sess;
         }
 
         // Check AccountsService
-        const QString accPath = QStringLiteral("/var/lib/AccountsService/users/") + username;
+        const QString accPath = QStringLiteral("/var/lib/AccountsService/users/") + user;
         if (QFile::exists(accPath)) {
             QSettings accSettings(accPath, QSettings::IniFormat);
             accSettings.beginGroup(QStringLiteral("User"));
@@ -214,10 +305,20 @@ QString GreeterState::getLastSession(const QString &username)
 
 void GreeterState::saveSession(const QString &username, const QString &sessionKey)
 {
-    if (!username.isEmpty()) {
-        m_lastUser = username;
-        m_userSessions[username] = sessionKey;
-        emit lastUserChanged();
+    if (username.isEmpty() || sessionKey.isEmpty()) {
+        return;
     }
-    save();
+    bool changed = false;
+    if (m_lastUser != username) {
+        m_lastUser = username;
+        emit lastUserChanged();
+        changed = true;
+    }
+    if (m_userSessions.value(username).toString() != sessionKey) {
+        m_userSessions[username] = sessionKey;
+        changed = true;
+    }
+    if (changed) {
+        save();
+    }
 }

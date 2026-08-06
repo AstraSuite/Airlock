@@ -23,11 +23,16 @@ class GreeterState : public QObject {
     Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
     Q_PROPERTY(bool lavaLampEnabled READ lavaLampEnabled WRITE setLavaLampEnabled NOTIFY lavaLampEnabledChanged)
     Q_PROPERTY(QString lastUser READ lastUser WRITE setLastUser NOTIFY lastUserChanged)
+    Q_PROPERTY(QString schemeName READ schemeName WRITE setSchemeName NOTIFY schemeNameChanged)
+    Q_PROPERTY(QString schemeFlavour READ schemeFlavour WRITE setSchemeFlavour NOTIFY schemeFlavourChanged)
+    Q_PROPERTY(QString schemeMode READ schemeMode WRITE setSchemeMode NOTIFY schemeModeChanged)
     Q_PROPERTY(QString stateFilePath READ stateFilePath CONSTANT)
 
 public:
     explicit GreeterState(QObject *parent = nullptr);
-    ~GreeterState() override = default;
+    ~GreeterState() override;
+
+    static GreeterState *instance();
 
     static QStringList candidatePaths() {
         return {
@@ -54,8 +59,18 @@ public:
     QString lastUser() const { return m_lastUser; }
     void setLastUser(const QString &v);
 
+    QString schemeName() const { return m_schemeName; }
+    void setSchemeName(const QString &v);
+
+    QString schemeFlavour() const { return m_schemeFlavour; }
+    void setSchemeFlavour(const QString &v);
+
+    QString schemeMode() const { return m_schemeMode; }
+    void setSchemeMode(const QString &v);
+
     QString stateFilePath() const;
 
+    Q_INVOKABLE void setScheme(const QString &name, const QString &flavour, const QString &mode);
     Q_INVOKABLE void save();
     Q_INVOKABLE void reload();
 
@@ -68,6 +83,9 @@ signals:
     void avatarShapeNameChanged();
     void lavaLampEnabledChanged();
     void lastUserChanged();
+    void schemeNameChanged();
+    void schemeFlavourChanged();
+    void schemeModeChanged();
 
 private:
     void loadFromDisk();
@@ -77,26 +95,28 @@ private:
     QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
     bool m_lavaLampEnabled{true};
     QString m_lastUser;
+    QString m_schemeName{QStringLiteral("caelestia")};
+    QString m_schemeFlavour{QStringLiteral("default")};
+    QString m_schemeMode{QStringLiteral("dark")};
     QJsonObject m_userSessions;
 
     QFileSystemWatcher *m_watcher{nullptr};
     bool m_isSaving{false};
+
+    static GreeterState *s_instance;
 };
 
 class GreeterStateHelper {
 public:
     static QString getLastUser() {
-        GreeterState s;
-        return s.lastUser();
+        return GreeterState::instance()->lastUser();
     }
 
     static QString getLastSession(const QString &username = QString()) {
-        GreeterState s;
-        return s.getLastSession(username);
+        return GreeterState::instance()->getLastSession(username);
     }
 
     static void saveSession(const QString &username, const QString &sessionKey) {
-        GreeterState s;
-        s.saveSession(username, sessionKey);
+        GreeterState::instance()->saveSession(username, sessionKey);
     }
 };

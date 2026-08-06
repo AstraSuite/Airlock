@@ -5,6 +5,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QFileInfo>
+#include <QSet>
+#include <algorithm>
 #include <QDebug>
 
 SchemeDiscovery::SchemeDiscovery(QObject *parent)
@@ -26,14 +28,17 @@ QStringList SchemeDiscovery::schemeSearchPaths() const
 
     paths.append(QStringLiteral("/usr/share/caelestia/schemes"));
     paths.append(QStringLiteral("/usr/local/share/caelestia/schemes"));
-    paths.append(QDir::homePath() + QStringLiteral("/.local/share/caelestia/schemes"));
-    paths.append(QDir::homePath() + QStringLiteral("/.config/caelestia/schemes"));
+    paths.append(QStringLiteral("/var/cache/caelestia-greeter/schemes"));
     return paths;
 }
 
 QVariantMap SchemeDiscovery::getSchemeColours(const QString &name, const QString &flavour, const QString &mode)
 {
     QVariantMap result;
+    if (name.isEmpty() || name.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
+        return result;
+    }
+
     const QString targetMode = mode.isEmpty() ? QStringLiteral("dark") : mode.toLower();
 
     for (const QString &basePath : schemeSearchPaths()) {
@@ -51,7 +56,10 @@ QVariantMap SchemeDiscovery::getSchemeColours(const QString &name, const QString
                     const auto spaceIdx = line.indexOf(QLatin1Char(' '));
                     if (spaceIdx > 0) {
                         const QString k = line.left(spaceIdx).trimmed();
-                        const QString v = line.mid(spaceIdx + 1).trimmed();
+                        QString v = line.mid(spaceIdx + 1).trimmed();
+                        if (!v.startsWith(QLatin1Char('#'))) {
+                            v.prepend(QLatin1Char('#'));
+                        }
                         result[k] = v;
                     }
                 }
@@ -69,7 +77,11 @@ QVariantMap SchemeDiscovery::getSchemeColours(const QString &name, const QString
                         obj = obj.value(QStringLiteral("colours")).toObject();
                     }
                     for (auto it = obj.begin(); it != obj.end(); ++it) {
-                        result[it.key()] = it.value().toVariant();
+                        QString v = it.value().toString();
+                        if (!v.isEmpty() && !v.startsWith(QLatin1Char('#'))) {
+                            v.prepend(QLatin1Char('#'));
+                        }
+                        result[it.key()] = v;
                     }
                     if (!result.isEmpty()) return result;
                 }
@@ -92,6 +104,10 @@ void SchemeDiscovery::reload()
 
         const QStringList schemeDirs = baseDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
         for (const QString &sName : schemeDirs) {
+            if (sName.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
+                continue; // Dynamic schemes excluded
+            }
+
             QDir sDir(baseDir.absoluteFilePath(sName));
             const QStringList flavourDirs = sDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
             for (const QString &fName : flavourDirs) {
@@ -123,6 +139,15 @@ void SchemeDiscovery::reload()
             }
         }
     }
+
+    // Sort schemes alphabetically by name + flavour
+    std::sort(m_schemes.begin(), m_schemes.end(), [](const QVariant &a, const QVariant &b) {
+        const QVariantMap ma = a.toMap();
+        const QVariantMap mb = b.toMap();
+        const QString ka = ma.value(QStringLiteral("name")).toString() + ma.value(QStringLiteral("flavour")).toString();
+        const QString kb = mb.value(QStringLiteral("name")).toString() + mb.value(QStringLiteral("flavour")).toString();
+        return ka.localeAwareCompare(kb) < 0;
+    });
 
     emit schemesChanged();
 }

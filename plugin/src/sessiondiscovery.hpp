@@ -22,6 +22,7 @@ public:
 
     Q_INVOKABLE void reload();
     Q_INVOKABLE void saveLastSession(const QString &username, const QString &sessionKey);
+    Q_INVOKABLE void updateDefaultIndex();
     Q_INVOKABLE int sessionIndexForUser(const QString &username);
     Q_INVOKABLE int indexOfSession(const QString &sessionKey);
 
