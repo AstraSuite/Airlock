@@ -8,11 +8,14 @@
 
 #include <fcntl.h>
 #include <limits.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <cerrno>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -116,6 +119,116 @@ int runQuiet(const std::vector<std::string>& args) {
         return WEXITSTATUS(status);
     }
     return -1;
+}
+
+// Expands a leading '~' (to `home`) and any $VAR / ${VAR} environment
+// references in a path.
+std::string expandPath(std::string path, const std::string& home) {
+    if (path == "~") {
+        return home;
+    }
+    if (path.rfind("~/", 0) == 0) {
+        path.replace(0, 1, home);
+    }
+    for (;;) {
+        const size_t dollar = path.find('$');
+        if (dollar == std::string::npos) {
+            break;
+        }
+        size_t end = dollar + 1;
+        if (end < path.size() && path[end] == '{') {
+            const size_t close = path.find('}', end);
+            if (close == std::string::npos) {
+                break;
+            }
+            const std::string name = path.substr(end + 1, close - end - 1);
+            const char* val = std::getenv(name.c_str());
+            path.replace(dollar, close - dollar + 1, val == nullptr ? "" : val);
+        } else {
+            while (end < path.size()
+                   && (std::isalnum(static_cast<unsigned char>(path[end])) || path[end] == '_')) {
+                ++end;
+            }
+            if (end == dollar + 1) {
+                break;
+            }
+            const std::string name = path.substr(dollar + 1, end - dollar - 1);
+            const char* val = std::getenv(name.c_str());
+            path.replace(dollar, end - dollar, val == nullptr ? "" : val);
+        }
+    }
+    return path;
+}
+
+// The real user to attribute the action to, honoring `sudo` invocations.
+std::string currentUser() {
+    if (const char* sudo = std::getenv("SUDO_USER"); sudo != nullptr && *sudo != '\0') {
+        return sudo;
+    }
+    if (struct passwd* pw = ::getpwuid(::getuid()); pw != nullptr && pw->pw_name != nullptr) {
+        return pw->pw_name;
+    }
+    return "user";
+}
+
+// Recursively creates a directory tree with 0755 permissions.
+bool mkdirs(const std::string& path) {
+    if (path.empty()) {
+        return false;
+    }
+    std::string cur;
+    for (size_t pos = path[0] == '/' ? 1 : 0; pos != std::string::npos;) {
+        const size_t next = path.find('/', pos);
+        cur = path.substr(0, next == std::string::npos ? path.size() : next);
+        if (!cur.empty() && ::mkdir(cur.c_str(), 0755) != 0 && errno != EEXIST) {
+            return false;
+        }
+        pos = next == std::string::npos ? std::string::npos : next + 1;
+    }
+    return true;
+}
+
+// Copies `source` into the shared avatar store as `<user>`, where the greeter
+// process can read it even when the user's home directory is not traversable.
+// Images are stored world-readable (0644); they are just profile pictures.
+int setPfp(std::string source, const std::string& user) {
+    const std::string avatarDir = "/var/cache/caelestia-greeter/avatars";
+
+    std::string home;
+    if (struct passwd* pw = ::getpwnam(user.c_str()); pw != nullptr && pw->pw_dir != nullptr) {
+        home = pw->pw_dir;
+    } else if (const char* h = std::getenv("HOME"); h != nullptr) {
+        home = h;
+    }
+    source = expandPath(std::move(source), home.empty() ? "/home/" + user : home);
+
+    if (!isFile(source)) {
+        std::fprintf(stderr, "caelestia-greeter: '%s' is not a readable regular file\n", source.c_str());
+        return 1;
+    }
+    if (!mkdirs(avatarDir)) {
+        std::fprintf(stderr, "caelestia-greeter: could not create '%s'\n", avatarDir.c_str());
+        return 1;
+    }
+
+    const std::string dest = avatarDir + "/" + user;
+
+    std::ifstream in(source, std::ios::binary);
+    std::ofstream out(dest, std::ios::binary | std::ios::trunc);
+    if (!in || !out) {
+        std::fprintf(stderr, "caelestia-greeter: could not write '%s'\n", dest.c_str());
+        return 1;
+    }
+    out << in.rdbuf();
+    out.close();
+    if (!out) {
+        std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", dest.c_str());
+        return 1;
+    }
+    ::chmod(dest.c_str(), 0644);
+
+    std::printf("caelestia-greeter: set profile picture for '%s' from '%s'\n", user.c_str(), source.c_str());
+    return 0;
 }
 
 // Lists connected output names from `wlr-randr` ("NAME \"desc\"" lines).
@@ -354,6 +467,12 @@ void printUsage() {
         "\n"
         "Other modes:\n"
         "\n"
+        "  --set-pfp FILE            copy FILE into the shared avatar store\n"
+        "                           (/var/cache/caelestia-greeter/avatars/<user>)\n"
+        "                           as the profile picture for the current user;\n"
+        "                           run with sudo (the greeter cannot read user\n"
+        "                           home directories). ~ and $VAR are expanded.\n"
+        "\n"
         "  --convert FILE | -c FILE  read monitor configurations from a Hyprland\n"
         "                           config (plain `monitor =` lines or Lua\n"
         "                           `hl.monitor({ ... })` blocks) and print the\n"
@@ -363,6 +482,7 @@ void printUsage() {
         "\n"
         "Examples:\n"
         "  caelestia-greeter --only DP-2\n"
+        "  sudo caelestia-greeter --set-pfp ~/.face\n"
         "  caelestia-greeter --output DP-2 --mode 2560x1440@120 --pos 0,0 \\\n"
         "                    --output DP-1 --off --output DP-3 --off\n");
 }
@@ -415,6 +535,8 @@ int main(int argc, char** argv) {
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return 0;
+        } else if (arg == "--set-pfp") {
+            return setPfp(takeValue(), currentUser());
         } else if (arg == "--convert" || arg == "-c") {
             return convertFile(takeValue());
         } else if (arg == "--only") {

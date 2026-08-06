@@ -31,15 +31,8 @@ Rectangle {
     LavaLamp {
         anchors.fill: parent
         blurry: root.panelVisible
-        opacity: root.panelVisible ? 0.45 : 0.75
+        opacity: root.panelVisible ? 0.62 : 0.75
         Behavior on opacity { NumberAnimation { duration: 400 } }
-    }
-
-    // Scrim overlay — deepens when panel is active
-    Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, root.panelVisible ? 0.55 : 0.20)
-        Behavior on color { ColorAnimation { duration: 350 } }
     }
 
     // Tap/Click anywhere on idle screen to reveal login panel

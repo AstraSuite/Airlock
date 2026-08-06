@@ -59,18 +59,21 @@ Item {
 
             RowLayout {
                 id: contentRow
-                anchors.centerIn: parent
-                anchors.horizontalCenterOffset: 2
+                anchors.left: parent.left
+                anchors.leftMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
 
-                MaterialIcon {
-                    text: {
-                        const s = root.currentSession;
-                        if (!s) return "desktop_windows";
-                        return s.type === "Wayland" ? "star" : "desktop_windows";
+                Item {
+                    implicitWidth: 18
+                    implicitHeight: 18
+
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        text: root.currentSession?.type === "Wayland" ? "layers" : "desktop_windows"
+                        fontStyle.pointSize: 15
+                        color: Colours.palette.m3primary
                     }
-                    fontStyle.pointSize: 15
-                    color: Colours.palette.m3primary
                 }
 
                 Text {
@@ -123,24 +126,24 @@ Item {
         }
     }
 
-    // ── Dropdown Menu Popup (Opens UPWARDS above split button so it never gets cut off) ───
+    // ── Dropdown Menu Popup (Drops down below the split button) ──────
     Rectangle {
         id: menuPopup
-        anchors.bottom: splitRow.top
-        anchors.bottomMargin: 8
+        anchors.top: splitRow.bottom
+        anchors.topMargin: 8
         anchors.horizontalCenter: splitRow.horizontalCenter
         implicitWidth: 220
         implicitHeight: sessCol.implicitHeight + 16
         radius: 16
-        color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                       Colours.palette.m3surfaceContainer.g,
-                       Colours.palette.m3surfaceContainer.b, 0.98)
+        color: Qt.rgba(Colours.palette.m3surfaceContainerHigh.r,
+                       Colours.palette.m3surfaceContainerHigh.g,
+                       Colours.palette.m3surfaceContainerHigh.b, 0.98)
         z: 10000
 
         visible: opacity > 0
         opacity: root.menuOpen ? 1 : 0
         scale: root.menuOpen ? 1 : 0.92
-        transformOrigin: Item.Bottom
+        transformOrigin: Item.Top
 
         Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
@@ -192,12 +195,18 @@ Item {
                         anchors.rightMargin: 10
                         spacing: 8
 
-                        MaterialIcon {
-                            text: itemRow.modelData.type === "Wayland" ? "star" : "desktop_windows"
-                            fontStyle.pointSize: 14
-                            color: root.currentIndex === itemRow.index
-                                ? Colours.palette.m3primary
-                                : Colours.palette.m3onSurfaceVariant
+                        Item {
+                            implicitWidth: 18
+                            implicitHeight: 18
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: itemRow.modelData.type === "Wayland" ? "layers" : "desktop_windows"
+                                fontStyle.pointSize: 14
+                                color: root.currentIndex === itemRow.index
+                                    ? Colours.palette.m3primary
+                                    : Colours.palette.m3onSurfaceVariant
+                            }
                         }
 
                         ColumnLayout {
@@ -205,6 +214,8 @@ Item {
                             spacing: 1
 
                             Text {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
                                 text: itemRow.modelData.name ?? ""
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 10
@@ -214,6 +225,8 @@ Item {
                             }
 
                             Text {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
                                 text: itemRow.modelData.type ?? ""
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 8
@@ -221,11 +234,18 @@ Item {
                             }
                         }
 
-                        MaterialIcon {
+                        Item {
+                            implicitWidth: 18
+                            implicitHeight: 18
                             visible: root.currentIndex === itemRow.index
-                            text: "check"
-                            fontStyle.pointSize: 14
-                            color: Colours.palette.m3primary
+
+                            MaterialIcon {
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "check"
+                                fontStyle.pointSize: 14
+                                color: Colours.palette.m3primary
+                            }
                         }
                     }
                 }

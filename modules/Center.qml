@@ -19,6 +19,9 @@ Item {
     property string passwordBuffer: ""
     property string stateMsg: ""
     property bool   authFailed: false
+    property string pendingPassword: ""
+    property bool   testSimulating: false
+    property int    testAuthDelay: 2500
     property int    currentSessionIndex: SessionDiscovery.defaultIndex
     property int    currentUserIndex: UserDiscovery.defaultIndex
 
@@ -49,11 +52,22 @@ Item {
             }
         }
 
+        // While the test-mode authentication is "in flight", the UI is locked
+        // just like a real greetd handshake; Escape cancels it.
+        if (root.testSimulating) {
+            if (event.key === Qt.Key_Escape) {
+                root._cancelSimulation();
+            }
+            event.accepted = true;
+            return;
+        }
+
         if (event.key === Qt.Key_Escape) {
             if (passwordBuffer.length > 0) {
                 passwordBuffer = "";
             } else {
                 if (Greetd.available) Greetd.cancelSession();
+                root.pendingPassword = "";
                 root.dismissed();
             }
             event.accepted = true;
@@ -83,26 +97,65 @@ Item {
         stateMsg = "";
         authFailed = false;
         if (!Greetd.available) {
-            stateMsg = "Test mode: login simulated";
+            // Simulate a real greetd handshake: stash the password, clear the
+            // buffer so the pill shrinks and the loader spins, then reveal the
+            // message after a realistic delay.
+            if (root.testSimulating) return;
+            root.pendingPassword = root.passwordBuffer;
+            root.passwordBuffer = "";
+            root.testSimulating = true;
+            testAuthTimer.restart();
             return;
         }
         if (Greetd.state === GreetdState.Inactive) {
-            if (_user) Greetd.createSession(_user.username);
+            if (_user) {
+                root.pendingPassword = root.passwordBuffer;
+                root.passwordBuffer = "";
+                Greetd.createSession(_user.username);
+            }
         } else if (Greetd.state === GreetdState.Authenticating) {
-            Greetd.respond(passwordBuffer);
-            passwordBuffer = "";
+            root.passwordBuffer = "";
+        }
+    }
+
+    function _cancelSimulation() {
+        root.testSimulating = false;
+        testAuthTimer.stop();
+        root.pendingPassword = "";
+        root.stateMsg = "";
+        root.authFailed = false;
+    }
+
+    Timer {
+        id: testAuthTimer
+        interval: root.testAuthDelay
+        repeat: false
+        onTriggered: {
+            root.testSimulating = false;
+            root.stateMsg = "Test mode: login simulated";
         }
     }
 
     Connections {
         target: Greetd
+        function onAuthMessage(message, error, responseRequired, echoResponse) {
+            // greetd only accepts a response after it has asked for one. Deliver the
+            // password typed before submitting rather than expecting a second Enter.
+            if (responseRequired && root.pendingPassword.length > 0) {
+                const pass = root.pendingPassword;
+                root.pendingPassword = "";
+                Greetd.respond(pass);
+            }
+        }
         function onAuthFailure(message) {
+            root.pendingPassword = "";
             root.stateMsg = message.length > 0 ? message : "Incorrect password.";
             root.authFailed = true;
             root.passwordBuffer = "";
             failAnim.restart();
         }
         function onReadyToLaunch() {
+            root.pendingPassword = "";
             root.stateMsg = "Starting session…";
             root.authFailed = false;
             const s = root._session;
@@ -114,6 +167,7 @@ Item {
             }
         }
         function onError(error) {
+            root.pendingPassword = "";
             root.stateMsg = error;
             root.authFailed = true;
             failAnim.restart();
@@ -127,9 +181,9 @@ Item {
         implicitWidth: 360
         implicitHeight: cardCol.implicitHeight + 44
         radius: 28
-        color: Qt.rgba(Colours.palette.m3surface.r,
-                       Colours.palette.m3surface.g,
-                       Colours.palette.m3surface.b, 0.94)
+        color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
+                       Colours.palette.m3surfaceContainer.g,
+                       Colours.palette.m3surfaceContainer.b, 0.94)
         Behavior on color { CAnim {} }
 
         ColumnLayout {
@@ -239,7 +293,8 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 4
                 buffer: root.passwordBuffer
-                authenticating: Greetd.state === GreetdState.Authenticating
+                authenticating: root.testSimulating
+                             || Greetd.state === GreetdState.Authenticating
                              || Greetd.state === GreetdState.Launching
                 authFailed: root.authFailed
                 authPrompt: root.stateMsg.toLowerCase().includes("password") ? root.stateMsg : ""
@@ -303,8 +358,10 @@ Item {
                 root.currentSessionIndex = SessionDiscovery.sessionIndexForUser(user.username);
             }
             root.passwordBuffer = "";
+            root.pendingPassword = "";
             root.stateMsg = "";
             root.authFailed = false;
+            root._cancelSimulation();
         }
     }
 }

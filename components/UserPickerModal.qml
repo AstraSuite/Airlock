@@ -44,9 +44,9 @@ Item {
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            blurMax: 32
-            shadowColor: Qt.rgba(0, 0, 0, 0.75)
-            shadowVerticalOffset: 8
+            blurMax: 16
+            shadowColor: Qt.rgba(0, 0, 0, 0.7)
+            shadowVerticalOffset: 4
         }
 
         ColumnLayout {

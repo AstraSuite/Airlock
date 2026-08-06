@@ -55,9 +55,20 @@ void UserDiscovery::reload()
                 realName = username;
             }
 
-            // Find avatar
+            // Find avatar: check the shared avatar store first (written by
+            // `caelestia-greeter --set-pfp`, readable even when the home
+            // directory is not traversable), then /home/<username>, then the
+            // passwd home dir, then the AccountsService icon store.
+            const QString cacheAvatar = QStringLiteral("/var/cache/caelestia-greeter/avatars/") + username;
+            const QString avatarBase = QStringLiteral("/home/") + username;
             QString avatarPath;
-            if (QFile::exists(homeDir + QStringLiteral("/.face"))) {
+            if (QFile::exists(cacheAvatar)) {
+                avatarPath = QStringLiteral("file://") + cacheAvatar;
+            } else if (QFile::exists(avatarBase + QStringLiteral("/.face"))) {
+                avatarPath = QStringLiteral("file://") + avatarBase + QStringLiteral("/.face");
+            } else if (QFile::exists(avatarBase + QStringLiteral("/.face.icon"))) {
+                avatarPath = QStringLiteral("file://") + avatarBase + QStringLiteral("/.face.icon");
+            } else if (QFile::exists(homeDir + QStringLiteral("/.face"))) {
                 avatarPath = QStringLiteral("file://") + homeDir + QStringLiteral("/.face");
             } else if (QFile::exists(homeDir + QStringLiteral("/.face.icon"))) {
                 avatarPath = QStringLiteral("file://") + homeDir + QStringLiteral("/.face.icon");

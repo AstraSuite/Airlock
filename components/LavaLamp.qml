@@ -37,14 +37,15 @@ Item {
     ]
 
     property int count: 22
-    property real minSize: 54
-    property real maxSize: 180
+    property real minSize: 84
+    property real maxSize: 280
     property real minSpeed: 6
     property real maxSpeed: 22
     property real minRotSpeed: -12
     property real maxRotSpeed: 12
-    property list<real> lightOpacities: [0.32, 0.32, 0.10, 0.22]
-    property list<real> darkOpacities: [0.18, 0.18, 0.08, 0.18]
+    property real wallMargin: 60
+    property list<real> lightOpacities: [0.45, 0.45, 0.18, 0.32]
+    property list<real> darkOpacities: [0.28, 0.28, 0.12, 0.26]
 
     function rand(min: real, max: real): real {
         return min + Math.random() * (max - min);
@@ -123,6 +124,11 @@ Item {
         running: root.visible && root.width > 0 && root.height > 0 && Colours.lavaLampEnabled
         onTriggered: {
             const dt = frameTime;
+            const minX = -root.wallMargin;
+            const maxX = root.width + root.wallMargin;
+            const minY = -root.wallMargin;
+            const maxY = root.height + root.wallMargin;
+
             for (let i = 0; i < shapes.count; i++) {
                 const s = shapes.itemAt(i) as DriftingShape;
                 if (!s)
@@ -132,15 +138,23 @@ Item {
                 s.y += s.vy * dt;
                 s.rotation += s.vr * dt;
 
-                if (s.x + s.width < -30)
-                    s.x = root.width + 20;
-                else if (s.x > root.width + 30)
-                    s.x = -s.width - 20;
+                // Bounce off invisible walls slightly outside the display bounds so
+                // shapes stay on screen instead of wrapping around and vanishing.
+                if (s.x < minX) {
+                    s.x = minX;
+                    s.vx = Math.abs(s.vx);
+                } else if (s.x + s.width > maxX) {
+                    s.x = maxX - s.width;
+                    s.vx = -Math.abs(s.vx);
+                }
 
-                if (s.y + s.height < -30)
-                    s.y = root.height + 20;
-                else if (s.y > root.height + 30)
-                    s.y = -s.height - 20;
+                if (s.y < minY) {
+                    s.y = minY;
+                    s.vy = Math.abs(s.vy);
+                } else if (s.y + s.height > maxY) {
+                    s.y = maxY - s.height;
+                    s.vy = -Math.abs(s.vy);
+                }
             }
         }
     }

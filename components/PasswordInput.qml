@@ -27,7 +27,7 @@ StyledRect {
     }
     implicitHeight: 42
 
-    color: Colours.tPalette.m3surfaceContainer
+    color: Colours.tPalette.m3surfaceContainerHigh
     radius: height / 2
 
     Behavior on implicitWidth {
@@ -71,25 +71,33 @@ StyledRect {
         anchors.rightMargin: 8
         spacing: 6
 
-        // Left Icon Wrapper (Lock / Authenticating Spinner)
+        // Left Icon Wrapper (Lock / Morphing Loader)
         Item {
             id: iconWrapper
             Layout.alignment: Qt.AlignVCenter
             implicitWidth: 28
             implicitHeight: 28
 
+            LoadingIndicator {
+                anchors.centerIn: parent
+                implicitSize: 24
+                animated: root.authenticating
+                opacity: root.authenticating ? 1 : 0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 150 }
+                }
+            }
+
             MaterialIcon {
                 anchors.centerIn: parent
-                text: root.authenticating ? "sync" : "lock"
+                text: "lock"
                 color: root.authFailed ? Colours.palette.m3error : Colours.palette.m3onSurfaceVariant
                 fontStyle.pointSize: 16
+                opacity: root.authenticating ? 0 : 1
 
-                RotationAnimation on rotation {
-                    running: root.authenticating
-                    loops: Animation.Infinite
-                    from: 0; to: 360
-                    duration: 900
-                    easing.type: Easing.Linear
+                Behavior on opacity {
+                    NumberAnimation { duration: 150 }
                 }
             }
         }

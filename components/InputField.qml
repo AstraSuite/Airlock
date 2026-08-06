@@ -73,7 +73,7 @@ Item {
         font.family: "Google Sans Flex"
         font.pointSize: 11
 
-        opacity: root.buffer.length > 0 ? 0 : 1
+        opacity: root.authenticating || root.buffer.length === 0 ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: 120 }
         }
@@ -104,6 +104,11 @@ Item {
         orientation: Qt.Horizontal
         spacing: 4
         interactive: false
+        opacity: root.authenticating ? 0 : 1
+
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
 
         model: ScriptModel {
             values: root.buffer.split("")

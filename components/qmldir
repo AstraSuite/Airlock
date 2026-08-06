@@ -8,6 +8,7 @@ FetchCard 1.0 FetchCard.qml
 IdleClock 1.0 IdleClock.qml
 InputField 1.0 InputField.qml
 LavaLamp 1.0 LavaLamp.qml
+LoadingIndicator 1.0 LoadingIndicator.qml
 MaterialIcon 1.0 MaterialIcon.qml
 MediaCard 1.0 MediaCard.qml
 PasswordInput 1.0 PasswordInput.qml
