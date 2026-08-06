@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick DBus)
 
 qt_standard_project_setup(REQUIRES 6.6)
 
@@ -18,6 +18,8 @@ qt_add_qml_module(caelestia-greeter-plugin
         src/userdiscovery.cpp
         src/schemediscovery.hpp
         src/schemediscovery.cpp
+        src/sessionmanager.hpp
+        src/sessionmanager.cpp
 )
 
 target_include_directories(caelestia-greeter-plugin PUBLIC
@@ -28,6 +30,7 @@ target_link_libraries(caelestia-greeter-plugin PRIVATE
     Qt6::Core
     Qt6::Qml
     Qt6::Quick
+    Qt6::DBus
 )
 
 # Install

@@ -27,7 +27,7 @@ Item {
         anchors.centerIn: parent
         spacing: 3
 
-        // ── Left Segment: Action / Label ──────────────────────────────
+        // ── Left Segment: Action / Session Toggle ─────────────────────
         Rectangle {
             id: leftBtn
             implicitHeight: 36
@@ -38,30 +38,31 @@ Item {
             topRightRadius: 4
             bottomRightRadius: 4
 
-            color: leftMouse.containsMouse
+            color: leftHover.hovered
                 ? Qt.alpha(Colours.palette.m3secondaryContainer, 0.90)
                 : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.85)
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
-            MouseArea {
-                id: leftMouse
-                anchors.fill: parent
-                hoverEnabled: true
+            HoverHandler {
+                id: leftHover
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
+            }
+
+            TapHandler {
+                onTapped: {
                     if (SessionDiscovery.sessions.length > 1) {
                         root.currentIndex = (root.currentIndex + 1) % SessionDiscovery.sessions.length;
                         root.sessionChanged(root.currentIndex);
+                    } else if (SessionDiscovery.sessions.length === 1) {
+                        root.menuOpen = !root.menuOpen;
                     }
                 }
             }
 
             RowLayout {
                 id: contentRow
-                anchors.left: parent.left
-                anchors.leftMargin: 14
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 spacing: 6
 
                 Item {
@@ -100,18 +101,19 @@ Item {
             Behavior on topLeftRadius { NumberAnimation { duration: 150 } }
             Behavior on bottomLeftRadius { NumberAnimation { duration: 150 } }
 
-            color: rightMouse.containsMouse || root.menuOpen
+            color: rightHover.hovered || root.menuOpen
                 ? Qt.alpha(Colours.palette.m3secondaryContainer, 0.90)
                 : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.85)
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
-            MouseArea {
-                id: rightMouse
-                anchors.fill: parent
-                hoverEnabled: true
+            HoverHandler {
+                id: rightHover
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.menuOpen = !root.menuOpen
+            }
+
+            TapHandler {
+                onTapped: root.menuOpen = !root.menuOpen
             }
 
             MaterialIcon {
@@ -126,19 +128,17 @@ Item {
         }
     }
 
-    // ── Dropdown Menu Popup (Drops down below the split button) ──────
+    // ── Dropdown Menu Popup ───────────────────────────────────────────
     Rectangle {
         id: menuPopup
         anchors.top: splitRow.bottom
         anchors.topMargin: 8
         anchors.horizontalCenter: splitRow.horizontalCenter
-        implicitWidth: 220
+        implicitWidth: 230
         implicitHeight: sessCol.implicitHeight + 16
         radius: 16
-        color: Qt.rgba(Colours.palette.m3surfaceContainerHigh.r,
-                       Colours.palette.m3surfaceContainerHigh.g,
-                       Colours.palette.m3surfaceContainerHigh.b, 0.98)
-        z: 10000
+        color: Colours.palette.m3surfaceContainerHighest
+        z: 99999
 
         visible: opacity > 0
         opacity: root.menuOpen ? 1 : 0
@@ -148,11 +148,16 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
 
-        // Click catcher inside menuPopup to prevent any click-through
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.menuOpen
-            onClicked: {}
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            blurMax: 14
+            shadowColor: Qt.rgba(0, 0, 0, 0.6)
+            shadowVerticalOffset: 4
+        }
+
+        TapHandler {
+            // Absorb taps on background of popup so they don't dismiss through
         }
 
         ColumnLayout {
@@ -171,18 +176,19 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 38
                     radius: 10
-                    color: itemMouse.containsMouse || root.currentIndex === itemRow.index
+                    color: itemHover.hovered || root.currentIndex === itemRow.index
                         ? Qt.alpha(Colours.palette.m3primaryContainer, 0.55)
                         : "transparent"
 
                     Behavior on color { ColorAnimation { duration: 120 } }
 
-                    MouseArea {
-                        id: itemMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
+                    HoverHandler {
+                        id: itemHover
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
+                    }
+
+                    TapHandler {
+                        onTapped: {
                             root.currentIndex = itemRow.index;
                             root.sessionChanged(itemRow.index);
                             root.menuOpen = false;

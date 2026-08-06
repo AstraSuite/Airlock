@@ -1,10 +1,15 @@
-// Caelestia Greeter launcher.
-//
-// Runs the greeter inside a Wayland compositor (e.g. cage). When monitor
-// options are given, they are applied to the running compositor via
-// wlr-randr (the wlr-output-management protocol) before quickshell starts,
-// so users can pick which output(s) the greeter shows on, their mode,
-// refresh rate, position, transform and scale.
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cctype>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <fcntl.h>
 #include <limits.h>
@@ -14,36 +19,25 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <cerrno>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <regex>
-#include <sstream>
-#include <string>
-#include <vector>
-
 namespace {
 
-void die(const std::string& msg) {
-    std::fprintf(stderr, "caelestia-greeter: %s\n", msg.c_str());
+[[noreturn]] void die(const std::string& msg) {
+    std::fprintf(stderr, "caelestia-greeter: error: %s\n", msg.c_str());
     std::exit(1);
 }
 
 bool isDir(const std::string& path) {
-    struct stat st {};
+    struct stat st;
     return ::stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 }
 
 bool isFile(const std::string& path) {
-    struct stat st {};
+    struct stat st;
     return ::stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode);
 }
 
 std::string dirName(const std::string& path) {
-    const size_t pos = path.find_last_of('/');
+    const size_t pos = path.rfind('/');
     if (pos == std::string::npos) {
         return ".";
     }
@@ -88,9 +82,8 @@ bool commandAvailable(const std::string& name) {
     return false;
 }
 
-// Runs `args` in a forked child with stdout/stderr sent to /dev/null and
-// returns the child's exit status, or -1 on failure to run.
-int runQuiet(const std::vector<std::string>& args) {
+// Runs `args` and captures stderr output. Returns the exit status.
+int runCommand(const std::vector<std::string>& args, std::string* outStderr = nullptr) {
     std::vector<char*> argv;
     argv.reserve(args.size() + 1);
     for (const auto& arg : args) {
@@ -98,19 +91,49 @@ int runQuiet(const std::vector<std::string>& args) {
     }
     argv.push_back(nullptr);
 
+    int pipefd[2];
+    if (outStderr != nullptr) {
+        if (::pipe(pipefd) < 0) {
+            return -1;
+        }
+    }
+
     const pid_t pid = ::fork();
     if (pid < 0) {
+        if (outStderr != nullptr) {
+            ::close(pipefd[0]);
+            ::close(pipefd[1]);
+        }
         return -1;
     }
     if (pid == 0) {
         const int devnull = ::open("/dev/null", O_WRONLY);
         if (devnull >= 0) {
             ::dup2(devnull, STDOUT_FILENO);
+        }
+        if (outStderr != nullptr) {
+            ::close(pipefd[0]);
+            ::dup2(pipefd[1], STDERR_FILENO);
+            ::close(pipefd[1]);
+        } else if (devnull >= 0) {
             ::dup2(devnull, STDERR_FILENO);
+        }
+        if (devnull >= 0) {
             ::close(devnull);
         }
         ::execvp(argv[0], argv.data());
         ::_exit(127);
+    }
+
+    if (outStderr != nullptr) {
+        ::close(pipefd[1]);
+        char buf[512];
+        ssize_t n;
+        while ((n = ::read(pipefd[0], buf, sizeof(buf) - 1)) > 0) {
+            buf[n] = '\0';
+            *outStderr += buf;
+        }
+        ::close(pipefd[0]);
     }
 
     int status = 0;
@@ -179,24 +202,39 @@ bool mkdirs(const std::string& path) {
     std::string cur;
     for (size_t pos = path[0] == '/' ? 1 : 0; pos != std::string::npos;) {
         const size_t next = path.find('/', pos);
-        cur = path.substr(0, next == std::string::npos ? path.size() : next);
-        if (!cur.empty() && ::mkdir(cur.c_str(), 0755) != 0 && errno != EEXIST) {
-            return false;
+        cur = path.substr(0, next);
+        if (!cur.empty() && !isDir(cur)) {
+            if (::mkdir(cur.c_str(), 0755) != 0 && errno != EEXIST) {
+                return false;
+            }
         }
-        pos = next == std::string::npos ? std::string::npos : next + 1;
+        if (next == std::string::npos) {
+            break;
+        }
+        pos = next + 1;
     }
     return true;
 }
 
-// Copies `source` into the shared avatar store as `<user>`, where the greeter
-// process can read it even when the user's home directory is not traversable.
-// Images are stored world-readable (0644); they are just profile pictures.
+// Sets the profile picture for `user` by copying `source` into the shared
+// avatar store.
 int setPfp(std::string source, const std::string& user) {
+    if (source.empty()) {
+        std::fprintf(stderr, "caelestia-greeter: --set-pfp requires a file path\n");
+        return 1;
+    }
+    if (user.empty()) {
+        std::fprintf(stderr, "caelestia-greeter: could not determine user name\n");
+        return 1;
+    }
+
     const std::string avatarDir = "/var/cache/caelestia-greeter/avatars";
 
     std::string home;
-    if (struct passwd* pw = ::getpwnam(user.c_str()); pw != nullptr && pw->pw_dir != nullptr) {
-        home = pw->pw_dir;
+    if (const char* sudo = std::getenv("SUDO_USER"); sudo != nullptr && *sudo != '\0') {
+        if (struct passwd* pw = ::getpwnam(sudo); pw != nullptr && pw->pw_dir != nullptr) {
+            home = pw->pw_dir;
+        }
     } else if (const char* h = std::getenv("HOME"); h != nullptr) {
         home = h;
     }
@@ -231,26 +269,32 @@ int setPfp(std::string source, const std::string& user) {
     return 0;
 }
 
-// Lists connected output names from `wlr-randr` ("NAME \"desc\"" lines).
+// Lists connected output names from `wlr-randr` ("NAME \"desc\"" lines),
+// with retries for compositor startup delay.
 std::vector<std::string> listOutputs() {
     std::vector<std::string> names;
-    FILE* pipe = ::popen("wlr-randr 2>/dev/null", "r");
-    if (pipe == nullptr) {
-        return names;
-    }
-    char* line = nullptr;
-    size_t len = 0;
-    while (::getline(&line, &len, pipe) != -1) {
-        if (line[0] == ' ' || line[0] == '\t' || line[0] == '\n') {
-            continue;
+    for (int attempt = 0; attempt < 12; ++attempt) {
+        FILE* pipe = ::popen("wlr-randr 2>/dev/null", "r");
+        if (pipe != nullptr) {
+            char* line = nullptr;
+            size_t len = 0;
+            while (::getline(&line, &len, pipe) != -1) {
+                if (line[0] == ' ' || line[0] == '\t' || line[0] == '\n') {
+                    continue;
+                }
+                char name[256];
+                if (std::sscanf(line, "%255s", name) == 1) {
+                    names.emplace_back(name);
+                }
+            }
+            std::free(line);
+            ::pclose(pipe);
         }
-        char name[256];
-        if (std::sscanf(line, "%255s", name) == 1) {
-            names.emplace_back(name);
+        if (!names.empty()) {
+            return names;
         }
+        ::usleep(200000); // 200ms sleep between attempts
     }
-    std::free(line);
-    ::pclose(pipe);
     return names;
 }
 
@@ -295,8 +339,22 @@ std::string hyprTransformToWlr(int transform) {
     return "normal";
 }
 
-// Appends the monitor flags for one output (with a leading space unless the
-// group is empty).
+// Formats a mode string for wlr-randr (--custom-mode if it has a refresh rate).
+std::string formatModeFlag(const std::string& mode) {
+    if (mode == "preferred" || mode == "auto") {
+        return "--preferred";
+    }
+    if (mode.find('@') != std::string::npos) {
+        std::string m = mode;
+        if (m.find("Hz") == std::string::npos && m.find("hz") == std::string::npos) {
+            m += "Hz";
+        }
+        return "--custom-mode " + m;
+    }
+    return "--mode " + mode;
+}
+
+// Appends the monitor flags for one output.
 void appendMonitorGroup(std::vector<std::string>& groups, const std::string& name, bool disabled,
                         const std::string& mode, const std::string& position, const std::string& scale,
                         int transform) {
@@ -307,10 +365,8 @@ void appendMonitorGroup(std::vector<std::string>& groups, const std::string& nam
     if (disabled) {
         group += " --off";
     } else {
-        if (mode == "preferred" || mode == "auto") {
-            group += " --preferred";
-        } else if (!mode.empty()) {
-            group += " --mode " + mode;
+        if (!mode.empty()) {
+            group += " " + formatModeFlag(mode);
         }
         if (!position.empty() && position != "auto") {
             group += " --pos " + hyprPositionToWlr(position);
@@ -325,9 +381,7 @@ void appendMonitorGroup(std::vector<std::string>& groups, const std::string& nam
     groups.push_back(group);
 }
 
-// Reads monitor configurations from a Hyprland config (either plain
-// `monitor = ...` lines or Lua `hl.monitor({ ... })` blocks as generated by
-// HyprMod) and prints the equivalent caelestia-greeter flags to stdout.
+// Reads monitor configurations from a Hyprland config.
 int convertFile(const std::string& path) {
     std::ifstream file(path);
     if (!file) {
@@ -451,7 +505,7 @@ void printUsage() {
         "  --on | --off | --toggle  enable / disable / toggle the current output\n"
         "\n"
         "  --mode WxH[@RATE]        set the current output mode (e.g. 1920x1080@144)\n"
-        "  --custom-mode WxH[@RATE] same as --mode\n"
+        "  --custom-mode WxH[@RATE] set custom mode with exact refresh rate\n"
         "  --preferred              use the output's preferred mode\n"
         "\n"
         "  --pos X,Y                set the output position in the global layout\n"
@@ -470,21 +524,130 @@ void printUsage() {
         "  --set-pfp FILE            copy FILE into the shared avatar store\n"
         "                           (/var/cache/caelestia-greeter/avatars/<user>)\n"
         "                           as the profile picture for the current user;\n"
-        "                           run with sudo (the greeter cannot read user\n"
-        "                           home directories). ~ and $VAR are expanded.\n"
+        "                           run with sudo. ~ and $VAR are expanded.\n"
         "\n"
         "  --convert FILE | -c FILE  read monitor configurations from a Hyprland\n"
         "                           config (plain `monitor =` lines or Lua\n"
         "                           `hl.monitor({ ... })` blocks) and print the\n"
         "                           equivalent caelestia-greeter flags\n"
         "\n"
-        "Any other arguments are passed through to quickshell.\n"
-        "\n"
-        "Examples:\n"
-        "  caelestia-greeter --only DP-2\n"
-        "  sudo caelestia-greeter --set-pfp ~/.face\n"
-        "  caelestia-greeter --output DP-2 --mode 2560x1440@120 --pos 0,0 \\\n"
-        "                    --output DP-1 --off --output DP-3 --off\n");
+        "Any other arguments are passed through to quickshell.\n");
+}
+
+// Executes wlr-randr with fallback strategies for modes and individual outputs.
+bool applyRandr(const std::vector<std::string>& randrArgs) {
+    if (randrArgs.empty()) {
+        return true;
+    }
+
+    std::vector<std::string> baseCmd;
+    baseCmd.push_back("wlr-randr");
+    baseCmd.insert(baseCmd.end(), randrArgs.begin(), randrArgs.end());
+
+    std::string err;
+    int res = -1;
+    for (int attempt = 0; attempt < 15 && res != 0; ++attempt) {
+        err.clear();
+        res = runCommand(baseCmd, &err);
+        if (res != 0) {
+            ::usleep(150000);
+        }
+    }
+    if (res == 0) {
+        return true;
+    }
+
+    // Fallback 1: convert any `--mode <with-@>` to `--custom-mode <mode>Hz`
+    std::vector<std::string> customCmd;
+    customCmd.push_back("wlr-randr");
+    for (size_t i = 0; i < randrArgs.size(); ++i) {
+        if (randrArgs[i] == "--mode" && i + 1 < randrArgs.size() && randrArgs[i + 1].find('@') != std::string::npos) {
+            customCmd.push_back("--custom-mode");
+            std::string m = randrArgs[++i];
+            if (m.find("Hz") == std::string::npos && m.find("hz") == std::string::npos) {
+                m += "Hz";
+            }
+            customCmd.push_back(m);
+        } else {
+            customCmd.push_back(randrArgs[i]);
+        }
+    }
+    err.clear();
+    res = runCommand(customCmd, &err);
+    if (res == 0) {
+        return true;
+    }
+
+    // Fallback 2: convert any `--mode WxH@...` to `--mode WxH` (resolution only)
+    std::vector<std::string> resOnlyCmd;
+    resOnlyCmd.push_back("wlr-randr");
+    for (size_t i = 0; i < randrArgs.size(); ++i) {
+        if ((randrArgs[i] == "--mode" || randrArgs[i] == "--custom-mode") && i + 1 < randrArgs.size()) {
+            std::string m = randrArgs[++i];
+            const size_t at = m.find('@');
+            if (at != std::string::npos) {
+                m = m.substr(0, at);
+            }
+            resOnlyCmd.push_back("--mode");
+            resOnlyCmd.push_back(m);
+        } else {
+            resOnlyCmd.push_back(randrArgs[i]);
+        }
+    }
+    err.clear();
+    res = runCommand(resOnlyCmd, &err);
+    if (res == 0) {
+        return true;
+    }
+
+    // Fallback 3: apply each output group individually
+    std::vector<std::vector<std::string>> groups;
+    std::vector<std::string> curGroup;
+    for (size_t i = 0; i < randrArgs.size(); ++i) {
+        if (randrArgs[i] == "--output" && !curGroup.empty()) {
+            groups.push_back(curGroup);
+            curGroup.clear();
+        }
+        curGroup.push_back(randrArgs[i]);
+    }
+    if (!curGroup.empty()) {
+        groups.push_back(curGroup);
+    }
+
+    bool anySuccess = false;
+    for (const auto& group : groups) {
+        std::vector<std::string> subCmd;
+        subCmd.push_back("wlr-randr");
+        subCmd.insert(subCmd.end(), group.begin(), group.end());
+        err.clear();
+        if (runCommand(subCmd, &err) == 0) {
+            anySuccess = true;
+        } else {
+            // Try subCmd with custom-mode
+            std::vector<std::string> subCustom;
+            subCustom.push_back("wlr-randr");
+            for (size_t j = 0; j < group.size(); ++j) {
+                if (group[j] == "--mode" && j + 1 < group.size() && group[j + 1].find('@') != std::string::npos) {
+                    subCustom.push_back("--custom-mode");
+                    std::string m = group[++j];
+                    if (m.find("Hz") == std::string::npos && m.find("hz") == std::string::npos) {
+                        m += "Hz";
+                    }
+                    subCustom.push_back(m);
+                } else {
+                    subCustom.push_back(group[j]);
+                }
+            }
+            if (runCommand(subCustom, &err) == 0) {
+                anySuccess = true;
+            }
+        }
+    }
+
+    if (!anySuccess && !err.empty()) {
+        std::fprintf(stderr, "caelestia-greeter: warning: could not apply wlr-randr configuration: %s\n", trim(err).c_str());
+    }
+    return anySuccess;
 }
 
 }  // namespace
@@ -509,6 +672,24 @@ int main(int argc, char** argv) {
         configPath = dir + "/..";
     } else {
         die("could not locate configuration directory (set CAELESTIA_GREETER_DIR)");
+    }
+
+    // Configure QML import path so Caelestia.Greeter plugin is loaded
+    std::string qmlImport = "";
+    if (const char* envQml = std::getenv("QML_IMPORT_PATH"); envQml != nullptr && *envQml != '\0') {
+        qmlImport = envQml;
+    }
+    for (const std::string& p : {dir + "/qml", dir + "/../qml", dir + "/../build/qml", dir + "/build/qml", std::string("/usr/lib/qt6/qml"), std::string("/usr/lib64/qt6/qml")}) {
+        if (isDir(p)) {
+            if (!qmlImport.empty()) {
+                qmlImport += ":";
+            }
+            qmlImport += p;
+        }
+    }
+    if (!qmlImport.empty()) {
+        ::setenv("QML_IMPORT_PATH", qmlImport.c_str(), 1);
+        ::setenv("QML2_IMPORT_PATH", qmlImport.c_str(), 1);
     }
 
     // Parse monitor options.
@@ -570,48 +751,31 @@ int main(int argc, char** argv) {
         }
         const std::vector<std::string> outputs = listOutputs();
         if (outputs.empty()) {
-            die("could not query connected outputs (is the compositor running?)");
-        }
-        for (const auto& name : outputs) {
-            bool keep = false;
-            for (const auto& keepName : onlyKeep) {
-                if (name == keepName) {
-                    keep = true;
-                    break;
+            std::fprintf(stderr, "caelestia-greeter: warning: could not query connected outputs\n");
+        } else {
+            for (const auto& name : outputs) {
+                bool keep = false;
+                for (const auto& keepName : onlyKeep) {
+                    if (name == keepName) {
+                        keep = true;
+                        break;
+                    }
                 }
-            }
-            if (!keep) {
-                randrArgs.push_back("--output");
-                randrArgs.push_back(name);
-                randrArgs.push_back("--off");
+                if (!keep) {
+                    randrArgs.push_back("--output");
+                    randrArgs.push_back(name);
+                    randrArgs.push_back("--off");
+                }
             }
         }
     }
 
-    // Apply the requested output configuration. The compositor is fully
-    // initialized before this launcher is spawned (cage registers the
-    // wlr-output-management global first), but retry a few times in case the
-    // socket is not ready yet. On failure, warn and continue so greetd does
-    // not enter a respawn loop.
+    // Apply the requested output configuration.
     if (haveRandR) {
         if (!commandAvailable("wlr-randr")) {
             die("wlr-randr is required but was not found in PATH");
         }
-        std::vector<std::string> cmd;
-        cmd.reserve(randrArgs.size() + 1);
-        cmd.push_back("wlr-randr");
-        cmd.insert(cmd.end(), randrArgs.begin(), randrArgs.end());
-
-        int result = -1;
-        for (int attempt = 0; attempt < 20 && result != 0; ++attempt) {
-            result = runQuiet(cmd);
-            if (result != 0) {
-                ::usleep(250000);
-            }
-        }
-        if (result != 0) {
-            std::fprintf(stderr, "caelestia-greeter: warning: could not apply wlr-randr configuration\n");
-        }
+        applyRandr(randrArgs);
     }
 
     // Hand off to quickshell.

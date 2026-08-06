@@ -181,6 +181,7 @@ Item {
         implicitWidth: 360
         implicitHeight: cardCol.implicitHeight + 44
         radius: 28
+        z: sessionSplitBtn.menuOpen ? 2600 : 1
         color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
                        Colours.palette.m3surfaceContainer.g,
                        Colours.palette.m3surfaceContainer.b, 0.94)
@@ -334,7 +335,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         visible: sessionSplitBtn.menuOpen
-        z: 3500
+        z: 2500
         onClicked: sessionSplitBtn.menuOpen = false
     }
 

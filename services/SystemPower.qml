@@ -2,32 +2,42 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
+import Caelestia.Greeter
 
 Singleton {
     id: root
 
+    readonly property bool canRebootToUefi: SessionManager.canRebootToUefi()
+
     function poweroff() {
-        powerProc.command = ["systemctl", "poweroff"];
-        powerProc.running = true;
+        SessionManager.poweroff();
     }
 
     function reboot() {
-        powerProc.command = ["systemctl", "reboot"];
-        powerProc.running = true;
+        SessionManager.reboot();
+    }
+
+    function rebootToUefi() {
+        SessionManager.rebootToUefi();
+    }
+
+    function rebootToFirmware() {
+        SessionManager.rebootToUefi();
     }
 
     function suspend() {
-        powerProc.command = ["systemctl", "suspend"];
-        powerProc.running = true;
+        SessionManager.suspend();
     }
 
     function hibernate() {
-        powerProc.command = ["systemctl", "hibernate"];
-        powerProc.running = true;
+        SessionManager.hibernate();
     }
 
-    Process {
-        id: powerProc
+    function exec(cmd) {
+        if (Array.isArray(cmd)) {
+            SessionManager.exec(cmd);
+        } else {
+            SessionManager.exec([cmd]);
+        }
     }
 }
