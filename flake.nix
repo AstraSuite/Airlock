@@ -1,0 +1,92 @@
+{
+  description = "A clean M3 Quickshell frontend for greetd";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    quickshell = {
+      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    m3shapes = {
+      url = "github:soramanew/m3shapes/bdc327b29f95394a732baf3c9b19658ba23755b6";
+      flake = false;
+    };
+  };
+
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  } @ inputs: let
+    forAllSystems = fn:
+      nixpkgs.lib.genAttrs nixpkgs.lib.platforms.linux (
+        system: fn nixpkgs.legacyPackages.${system}
+      );
+  in {
+    formatter = forAllSystems (pkgs: pkgs.alejandra);
+
+    packages = forAllSystems (pkgs: rec {
+      caelestia-greeter = pkgs.callPackage ./nix {
+        inherit (inputs) m3shapes;
+        quickshell = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      };
+      default = caelestia-greeter;
+    });
+
+    devShells = forAllSystems (pkgs: {
+      default = pkgs.mkShell {
+        packages = with pkgs; [
+          cmake
+          ninja
+          pkg-config
+          qt6.qtbase
+          qt6.qtdeclarative
+          qt6.qtquick3d
+          cage
+          greetd.greetd
+        ];
+      };
+    });
+
+    nixosModules.default = { config, lib, pkgs, ... }:
+      with lib;
+      let
+        cfg = config.services.greetd.caelestiaGreeter;
+      in {
+        options.services.greetd.caelestiaGreeter = {
+          enable = mkEnableOption "Caelestia Greeter display manager frontend";
+          package = mkOption {
+            type = types.package;
+            default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+            description = "The caelestia-greeter package to use.";
+          };
+          compositor = mkOption {
+            type = types.enum [ "cage" "hyprland" ];
+            default = "cage";
+            description = "The Wayland compositor to run the greeter in.";
+          };
+        };
+
+        config = mkIf cfg.enable {
+          services.greetd = {
+            enable = true;
+            settings = {
+              default_session = {
+                command = if cfg.compositor == "cage" then
+                  "${pkgs.cage}/bin/cage -s -- ${cfg.package}/bin/caelestia-greeter"
+                else
+                  "${pkgs.hyprland}/bin/Hyprland";
+                user = "greeter";
+              };
+            };
+          };
+
+          systemd.tmpfiles.rules = [
+            "d /var/cache/caelestia-greeter 0755 greeter greeter -"
+          ];
+        };
+      };
+  };
+}

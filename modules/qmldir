@@ -1,0 +1,3 @@
+module qs.greeter.modules
+Center 1.0 Center.qml
+GreeterSurface 1.0 GreeterSurface.qml

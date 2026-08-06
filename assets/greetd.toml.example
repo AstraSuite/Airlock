@@ -1,0 +1,22 @@
+# Example configuration for /etc/greetd/config.toml
+#
+# Caelestia Greeter runs inside a minimal Wayland compositor like Cage or Hyprland.
+
+[terminal]
+# The VT on which to run the greeter
+vt = 1
+
+# Option 1: Cage (Recommended - Lightweight Kiosk Compositor)
+[default_session]
+command = "cage -s -- caelestia-greeter"
+user = "greeter"
+
+# Option 2: Cage with full binary path
+# [default_session]
+# command = "cage -s -- quickshell -p /etc/xdg/quickshell/caelestia-greeter"
+# user = "greeter"
+
+# Option 3: Hyprland in kiosk mode
+# [default_session]
+# command = "Hyprland --config /etc/greetd/hyprland-greeter.conf"
+# user = "greeter"

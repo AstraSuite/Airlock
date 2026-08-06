@@ -1,0 +1,26 @@
+module qs.greeter.components
+ActiveClock 1.0 ActiveClock.qml
+Anim 1.0 Anim.qml
+Avatar 1.0 Avatar.qml
+CAnim 1.0 CAnim.qml
+Clock 1.0 Clock.qml
+FetchCard 1.0 FetchCard.qml
+IdleClock 1.0 IdleClock.qml
+InputField 1.0 InputField.qml
+LavaLamp 1.0 LavaLamp.qml
+MaterialIcon 1.0 MaterialIcon.qml
+MediaCard 1.0 MediaCard.qml
+PasswordInput 1.0 PasswordInput.qml
+PowerMenu 1.0 PowerMenu.qml
+ResourcesCard 1.0 ResourcesCard.qml
+SchemePickerModal 1.0 SchemePickerModal.qml
+SessionPicker 1.0 SessionPicker.qml
+SessionSplitButton 1.0 SessionSplitButton.qml
+SettingsModal 1.0 SettingsModal.qml
+SettingsPanel 1.0 SettingsPanel.qml
+StatusCard 1.0 StatusCard.qml
+StyledRect 1.0 StyledRect.qml
+StyledText 1.0 StyledText.qml
+UserPickerModal 1.0 UserPickerModal.qml
+VerticalFadeListView 1.0 VerticalFadeListView.qml
+WeatherCard 1.0 WeatherCard.qml
