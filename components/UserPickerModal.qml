@@ -34,12 +34,13 @@ Item {
         }
     }
 
-    // ── Main Opaque Dialog Card with Elevation Shadow ───────────────
+    // ── Main Dialog Card with Elevation Shadow ──────────────────────
     Rectangle {
         id: card
         anchors.fill: parent
         radius: 24
-        color: Colours.palette.m3surfaceContainerHighest
+        color: Colours.tPalette.m3surfaceContainerHighest
+        Behavior on color { ColorAnimation { duration: 200 } }
 
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -81,9 +82,8 @@ Item {
                         text: "Switch User"
                         font.family: "Google Sans Flex"
                         font.pointSize: 13
-                        font.weight: Font.Bold
+                        font.weight: Font.DemiBold
                         color: Colours.palette.m3onSurface
-                        horizontalAlignment: Text.AlignLeft
                     }
 
                     Text {
@@ -91,7 +91,6 @@ Item {
                         font.family: "Google Sans Flex"
                         font.pointSize: 9
                         color: Colours.palette.m3outline
-                        horizontalAlignment: Text.AlignLeft
                     }
                 }
             }
@@ -102,15 +101,15 @@ Item {
                 color: Qt.alpha(Colours.palette.m3outlineVariant, 0.30)
             }
 
-            // ── Scrollable User List with Fade Edges ─────────────────
+            // ── Clean User List View ────────────────────────────────
             VerticalFadeListView {
                 id: userList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                model: UserDiscovery.users
                 spacing: 6
-                fadeAmount: 0.14
+                model: UserDiscovery.users
+                fadeAmount: 0.12
 
                 delegate: Rectangle {
                     id: userRow
@@ -125,8 +124,8 @@ Item {
                     readonly property bool isCurrentActive: root.selectedIndex === index
 
                     color: rowHover.hovered || isSelected
-                        ? Qt.alpha(Colours.palette.m3primaryContainer, 0.65)
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.50)
+                        ? Colours.tPalette.m3primaryContainer
+                        : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: rowHover }
 

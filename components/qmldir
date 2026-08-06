@@ -19,8 +19,10 @@ SessionPicker 1.0 SessionPicker.qml
 SessionSplitButton 1.0 SessionSplitButton.qml
 SettingsModal 1.0 SettingsModal.qml
 SettingsPanel 1.0 SettingsPanel.qml
+SliderRow 1.0 SliderRow.qml
 StatusCard 1.0 StatusCard.qml
 StyledRect 1.0 StyledRect.qml
+StyledSlider 1.0 StyledSlider.qml
 StyledText 1.0 StyledText.qml
 UserPickerModal 1.0 UserPickerModal.qml
 VerticalFadeListView 1.0 VerticalFadeListView.qml

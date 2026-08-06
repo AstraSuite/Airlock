@@ -13,7 +13,7 @@ GreeterState::GreeterState(QObject *parent)
 {
     loadFromDisk();
 
-    const QString path = findReadablePath();
+    const QString path = stateFilePath();
     if (!path.isEmpty() && QFile::exists(path)) {
         m_watcher->addPath(path);
     }
@@ -28,18 +28,16 @@ GreeterState::GreeterState(QObject *parent)
     });
 }
 
-QString GreeterState::findReadablePath() const
+QString GreeterState::stateFilePath() const
 {
+    // 1. Look for existing writable candidate files
     for (const QString &p : candidatePaths()) {
-        if (QFile::exists(p)) {
+        QFileInfo fi(p);
+        if (fi.exists() && fi.isWritable()) {
             return p;
         }
     }
-    return QString();
-}
-
-QString GreeterState::findWritablePath() const
-{
+    // 2. Look for writable candidate directory to create new file
     for (const QString &p : candidatePaths()) {
         QFileInfo fi(p);
         QDir dir = fi.dir();
@@ -48,28 +46,25 @@ QString GreeterState::findWritablePath() const
             if (dirFi.isWritable()) {
                 return p;
             }
-        } else {
-            // Try creating the directory
-            if (dir.mkpath(QStringLiteral("."))) {
-                QFileInfo dirFi(dir.absolutePath());
-                if (dirFi.isWritable()) {
-                    return p;
-                }
+        } else if (dir.mkpath(QStringLiteral("."))) {
+            QFileInfo dirFi(dir.absolutePath());
+            if (dirFi.isWritable()) {
+                return p;
             }
+        }
+    }
+    // 3. Fallback to existing readable file if read-only environment
+    for (const QString &p : candidatePaths()) {
+        if (QFile::exists(p)) {
+            return p;
         }
     }
     return QDir::tempPath() + QStringLiteral("/caelestia-greeter.json");
 }
 
-QString GreeterState::stateFilePath() const
-{
-    const QString readable = findReadablePath();
-    return readable.isEmpty() ? findWritablePath() : readable;
-}
-
 void GreeterState::loadFromDisk()
 {
-    const QString path = findReadablePath();
+    const QString path = stateFilePath();
     if (path.isEmpty()) return;
 
     QFile f(path);
@@ -111,7 +106,7 @@ void GreeterState::loadFromDisk()
 void GreeterState::save()
 {
     m_isSaving = true;
-    const QString targetPath = findWritablePath();
+    const QString targetPath = stateFilePath();
 
     QJsonObject root;
     if (!m_lastUser.isEmpty()) {

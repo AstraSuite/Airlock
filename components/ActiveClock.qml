@@ -17,9 +17,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 18
-        color: Qt.rgba(Colours.palette.m3surfaceContainerHigh.r,
-                       Colours.palette.m3surfaceContainerHigh.g,
-                       Colours.palette.m3surfaceContainerHigh.b, 0.85)
+        color: Colours.tPalette.m3surfaceContainer
+        Behavior on color { CAnim {} }
     }
 
     RowLayout {

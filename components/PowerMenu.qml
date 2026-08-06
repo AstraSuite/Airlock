@@ -72,7 +72,7 @@ Item {
                     ? Colours.palette.m3secondary
                     : isHovered
                         ? Colours.palette.m3primary
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.70)
+                        : Colours.tPalette.m3surfaceContainer
 
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
@@ -116,7 +116,7 @@ Item {
         implicitWidth: tipText.implicitWidth + 16
         implicitHeight: 24
         radius: 12
-        color: Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.95)
+        color: Colours.tPalette.m3surfaceContainerHighest
 
         visible: opacity > 0
         opacity: root.hoveredIndex >= 0 ? 1 : 0

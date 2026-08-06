@@ -27,7 +27,7 @@ Item {
         width: root.size
         height: root.size
         radius: root.size / 2
-        color: Colours.tPalette.m3surfaceContainerHighest
+        color: Colours.palette.m3surfaceContainerHighest
 
         // Accent ring
         Rectangle {

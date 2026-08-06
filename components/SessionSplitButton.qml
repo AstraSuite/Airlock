@@ -39,8 +39,8 @@ Item {
             bottomRightRadius: 4
 
             color: leftHover.hovered
-                ? Qt.alpha(Colours.palette.m3secondaryContainer, 0.90)
-                : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.85)
+                ? Colours.tPalette.m3secondaryContainer
+                : Colours.tPalette.m3surfaceContainer
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -102,8 +102,8 @@ Item {
             Behavior on bottomLeftRadius { NumberAnimation { duration: 150 } }
 
             color: rightHover.hovered || root.menuOpen
-                ? Qt.alpha(Colours.palette.m3secondaryContainer, 0.90)
-                : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.85)
+                ? Colours.tPalette.m3secondaryContainer
+                : Colours.tPalette.m3surfaceContainer
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -137,7 +137,7 @@ Item {
         implicitWidth: 230
         implicitHeight: sessCol.implicitHeight + 16
         radius: 16
-        color: Colours.palette.m3surfaceContainerHighest
+        color: Colours.tPalette.m3surfaceContainerHighest
         z: 99999
 
         visible: opacity > 0
@@ -177,7 +177,7 @@ Item {
                     implicitHeight: 38
                     radius: 10
                     color: itemHover.hovered || root.currentIndex === itemRow.index
-                        ? Qt.alpha(Colours.palette.m3primaryContainer, 0.55)
+                        ? Colours.tPalette.m3primaryContainer
                         : "transparent"
 
                     Behavior on color { ColorAnimation { duration: 120 } }

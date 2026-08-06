@@ -38,12 +38,14 @@ Item {
         { name: "Very Sunny",     value: MaterialShape.VerySunny },
         { name: "Soft Burst",     value: MaterialShape.SoftBurst },
         { name: "Circle",         value: MaterialShape.Circle },
-        { name: "Clover 4-Leaf",  value: MaterialShape.Clover4Leaf },
         { name: "Pentagon",       value: MaterialShape.Pentagon },
         { name: "Gem",            value: MaterialShape.Gem },
-        { name: "Diamond",        value: MaterialShape.Diamond },
         { name: "Arch",           value: MaterialShape.Arch },
-        { name: "Pill",           value: MaterialShape.Pill }
+        { name: "Arrow",          value: MaterialShape.Arrow },
+        { name: "Pill",           value: MaterialShape.Pill },
+        { name: "Triangle",       value: MaterialShape.Triangle },
+        { name: "Fan",            value: MaterialShape.Fan },
+        { name: "Oval",           value: MaterialShape.Oval }
     ]
 
     Process {
@@ -52,9 +54,7 @@ Item {
 
     BlobGroup {
         id: blobGroup
-        color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                       Colours.palette.m3surfaceContainer.g,
-                       Colours.palette.m3surfaceContainer.b, 0.96)
+        color: Colours.tPalette.m3surfaceContainer
         smoothing: 24
         cornerFill: false
     }
@@ -80,7 +80,7 @@ Item {
             PropertyChanges {
                 popupRect.anchors.bottomMargin: 64
                 popupRect.anchors.leftMargin: 0
-                popupRect.implicitWidth: 340
+                popupRect.implicitWidth: 350
                 popupRect.implicitHeight: contentCol.implicitHeight + 28
                 root.animDriver: 1
             }
@@ -150,8 +150,8 @@ Item {
                     }
 
                     color: hShapeHover.hovered || root.shapeMenuOpen
-                        ? Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.70)
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.50)
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: hShapeHover }
 
@@ -208,7 +208,7 @@ Item {
                                 bottomLeftRadius: 14
                                 topRightRadius: 4
                                 bottomRightRadius: 4
-                                color: Qt.alpha(Colours.palette.m3primaryContainer, 0.85)
+                                color: Colours.tPalette.m3primaryContainer
 
                                 RowLayout {
                                     id: shapeBtnRow
@@ -243,7 +243,7 @@ Item {
                                 bottomLeftRadius: 4
                                 topRightRadius: 14
                                 bottomRightRadius: 14
-                                color: Qt.alpha(Colours.palette.m3primaryContainer, 0.85)
+                                color: Colours.tPalette.m3primaryContainer
 
                                 MaterialIcon {
                                     anchors.centerIn: parent
@@ -293,7 +293,7 @@ Item {
                                 readonly property bool isSelected: Colours.avatarShape === modelData.value
 
                                 color: shapeItem.isSelected
-                                    ? Qt.alpha(Colours.palette.m3primaryContainer, 0.75)
+                                    ? Colours.tPalette.m3primaryContainer
                                     : (itemHover.hovered ? Qt.alpha(Colours.palette.m3onSurface, 0.08) : "transparent")
                                 Behavior on color { ColorAnimation { duration: 100 } }
                                 HoverHandler { id: itemHover }
@@ -351,8 +351,8 @@ Item {
                     radius: 4
 
                     color: h12Hover.hovered
-                        ? Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.70)
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.50)
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: h12Hover }
 
@@ -396,7 +396,7 @@ Item {
                         radius: 12
                         color: Colours.use12Hour
                             ? Colours.palette.m3primary
-                            : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.90)
+                            : Colours.tPalette.m3surfaceContainerHighest
                         Behavior on color { ColorAnimation { duration: 150 } }
 
                         Rectangle {
@@ -415,7 +415,7 @@ Item {
                                 fontStyle.pointSize: 11
                                 color: Colours.use12Hour
                                     ? Colours.palette.m3primary
-                                    : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.95)
+                                    : Colours.palette.m3surfaceContainerHigh
                             }
                         }
                     }
@@ -433,8 +433,8 @@ Item {
                     radius: 4
 
                     color: hThemeHover.hovered
-                        ? Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.70)
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.50)
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: hThemeHover }
 
@@ -478,7 +478,7 @@ Item {
                         radius: 12
                         color: Colours.light
                             ? Colours.palette.m3primary
-                            : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.90)
+                            : Colours.tPalette.m3surfaceContainerHighest
                         Behavior on color { ColorAnimation { duration: 150 } }
 
                         Rectangle {
@@ -497,7 +497,7 @@ Item {
                                 fontStyle.pointSize: 11
                                 color: Colours.light
                                     ? Colours.palette.m3primary
-                                    : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.95)
+                                    : Colours.palette.m3surfaceContainerHigh
                             }
                         }
                     }
@@ -510,19 +510,20 @@ Item {
                     }
                 }
 
-                // ── Row 4: Lava Lamp Animation (Last in Group) ─────
+                // ── Row 4: Lava Lamp Animation (Last in Appearance Group) ────
                 Rectangle {
                     id: rowAnim
                     Layout.fillWidth: true
                     implicitHeight: 48
+                    radius: 4
                     topLeftRadius: 4
                     topRightRadius: 4
                     bottomLeftRadius: 14
                     bottomRightRadius: 14
 
                     color: hAnimHover.hovered
-                        ? Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.70)
-                        : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.50)
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: hAnimHover }
 
@@ -566,7 +567,7 @@ Item {
                         radius: 12
                         color: Colours.lavaLampEnabled
                             ? Colours.palette.m3primary
-                            : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.90)
+                            : Colours.tPalette.m3surfaceContainerHighest
                         Behavior on color { ColorAnimation { duration: 150 } }
 
                         Rectangle {
@@ -585,7 +586,7 @@ Item {
                                 fontStyle.pointSize: 11
                                 color: Colours.lavaLampEnabled
                                     ? Colours.palette.m3primary
-                                    : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.95)
+                                    : Colours.palette.m3surfaceContainerHigh
                             }
                         }
                     }

@@ -123,7 +123,7 @@ StyledRect {
                 anchors.fill: parent
                 color: root.buffer.length > 0
                     ? Colours.palette.m3primary
-                    : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.60)
+                    : Colours.tPalette.m3surfaceContainerHighest
                 shape: root.buffer.length > 0 ? MaterialShape.Arrow : MaterialShape.Circle
                 scale: root.buffer.length === 0 ? 1 : enterMouse.pressed ? 0.65 : enterMouse.containsMouse ? 0.88 : 0.78
                 rotation: 90

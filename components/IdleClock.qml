@@ -101,9 +101,8 @@ Item {
                 width: apText.implicitWidth + 16
                 height: apText.implicitHeight + 8
                 radius: 10
-                color: Qt.rgba(Colours.palette.m3surfaceContainerHigh.r,
-                               Colours.palette.m3surfaceContainerHigh.g,
-                               Colours.palette.m3surfaceContainerHigh.b, 0.85)
+                color: Colours.tPalette.m3surfaceContainerHigh
+                Behavior on color { CAnim {} }
 
                 Text {
                     id: apText

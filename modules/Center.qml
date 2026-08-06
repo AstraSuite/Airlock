@@ -182,9 +182,7 @@ Item {
         implicitHeight: cardCol.implicitHeight + 44
         radius: 28
         z: sessionSplitBtn.menuOpen ? 2600 : 1
-        color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                       Colours.palette.m3surfaceContainer.g,
-                       Colours.palette.m3surfaceContainer.b, 0.94)
+        color: Colours.tPalette.m3surfaceContainer
         Behavior on color { CAnim {} }
 
         ColumnLayout {
@@ -248,8 +246,8 @@ Item {
                 implicitHeight: 30
                 radius: 15
                 color: userChipMouse.containsMouse || userModal.isOpen
-                    ? Qt.alpha(Colours.palette.m3primaryContainer, 0.6)
-                    : Qt.alpha(Colours.palette.m3surfaceContainerHigh, 0.6)
+                    ? Colours.tPalette.m3primaryContainer
+                    : Colours.tPalette.m3surfaceContainerHigh
 
                 Behavior on color { ColorAnimation { duration: 120 } }
 

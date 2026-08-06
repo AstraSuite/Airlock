@@ -90,9 +90,7 @@ Item {
 
     BlobGroup {
         id: blobGroup
-        color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                       Colours.palette.m3surfaceContainer.g,
-                       Colours.palette.m3surfaceContainer.b, 0.96)
+        color: Colours.tPalette.m3surfaceContainer
         smoothing: 24
         cornerFill: false
     }
@@ -179,8 +177,8 @@ Item {
                         implicitHeight: 46
                         radius: 12
                         color: rowMouse.containsMouse
-                            ? Qt.alpha(Colours.palette.m3primaryContainer, 0.40)
-                            : (schemeRow.isActive ? Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.60) : "transparent")
+                            ? Colours.tPalette.m3primaryContainer
+                            : (schemeRow.isActive ? Colours.tPalette.m3surfaceContainerHighest : "transparent")
 
                         Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -221,11 +219,10 @@ Item {
                                     clip: true
 
                                     Rectangle {
-                                        anchors.top: parent.top
-                                        anchors.bottom: parent.bottom
-                                        anchors.right: parent.right
-                                        width: swatchBase.width
+                                        width: swatchContainer.width
+                                        height: swatchContainer.height
                                         radius: width / 2
+                                        anchors.right: parent.right
                                         color: schemeRow.modelData.colours?.primary
                                             ? `#${schemeRow.modelData.colours.primary}`
                                             : Colours.palette.m3primary
@@ -236,22 +233,22 @@ Item {
 
                         // ── Active Checkmark on Far Right ───────────
                         MaterialIcon {
-                            id: currentCheck
+                            id: checkIcon
                             anchors.right: parent.right
                             anchors.rightMargin: 14
                             anchors.verticalCenter: parent.verticalCenter
                             visible: schemeRow.isActive
                             text: "check"
-                            fontStyle.pointSize: 18
-                            color: Colours.palette.m3onSurfaceVariant
+                            fontStyle.pointSize: 16
+                            color: Colours.palette.m3primary
                         }
 
                         // ── Consistently Left-Aligned Typography ────
                         Column {
                             anchors.left: swatchContainer.right
                             anchors.leftMargin: 12
-                            anchors.right: currentCheck.visible ? currentCheck.left : parent.right
-                            anchors.rightMargin: currentCheck.visible ? 8 : 12
+                            anchors.right: checkIcon.visible ? checkIcon.left : parent.right
+                            anchors.rightMargin: checkIcon.visible ? 8 : 12
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 1
 
@@ -283,9 +280,8 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 40
                     radius: 20
-                    color: Qt.rgba(Colours.palette.m3surfaceContainerHighest.r,
-                                   Colours.palette.m3surfaceContainerHighest.g,
-                                   Colours.palette.m3surfaceContainerHighest.b, 0.75)
+                    color: Colours.tPalette.m3surfaceContainerHighest
+                    Behavior on color { CAnim {} }
 
                     RowLayout {
                         anchors.fill: parent

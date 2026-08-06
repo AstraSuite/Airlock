@@ -26,13 +26,53 @@ Rectangle {
         root.exitRequested();
     }
 
-    // ── Background: Hardware-Accelerated Lava Lamp ───────────────
-    // Sharp on clock screen, blurs into bokeh when login panel opens
-    LavaLamp {
+    // ── Background Layer (captured by BackdropBlur in modals) ────
+    Item {
+        id: bgLayer
         anchors.fill: parent
-        blurry: root.panelVisible
-        opacity: root.panelVisible ? 0.62 : 0.75
-        Behavior on opacity { NumberAnimation { duration: 400 } }
+
+        // Hardware-Accelerated Lava Lamp (blurs only when login panel opens)
+        LavaLamp {
+            anchors.fill: parent
+            blurry: root.panelVisible
+            opacity: root.panelVisible ? 0.62 : 0.75
+            Behavior on opacity { NumberAnimation { duration: 400 } }
+        }
+
+        // IDLE view: Titan One Stacked Clock
+        Item {
+            anchors.fill: parent
+            opacity: root.panelVisible ? 0 : 1
+            scale: root.panelVisible ? 0.90 : 1
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
+            Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
+
+            IdleClock {
+                anchors.centerIn: parent
+            }
+
+            // "Press enter or any key to unlock" pulsing hint
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 48
+                text: "PRESS ENTER OR ANY KEY TO UNLOCK"
+                font.family: "Google Sans Flex"
+                font.pointSize: 11
+                font.weight: Font.DemiBold
+                font.variableAxes: { "wdth": 80 }
+                color: Colours.palette.m3onSurface
+                font.letterSpacing: 2.0
+                opacity: 0.60
+
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.25; duration: 1500; easing.type: Easing.InOutQuad }
+                    NumberAnimation { to: 0.85; duration: 1500; easing.type: Easing.InOutQuad }
+                }
+            }
+        }
     }
 
     // Tap/Click anywhere on idle screen to reveal login panel
@@ -65,41 +105,6 @@ Rectangle {
         z: 2000
         opacity: root.panelVisible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
-    }
-
-    // ── IDLE view: Titan One Stacked Clock ───────────────────────
-    Item {
-        anchors.fill: parent
-        opacity: root.panelVisible ? 0 : 1
-        scale: root.panelVisible ? 0.90 : 1
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
-        Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
-
-        IdleClock {
-            anchors.centerIn: parent
-        }
-
-        // "Press enter or any key to unlock" pulsing hint
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 48
-            text: "PRESS ENTER OR ANY KEY TO UNLOCK"
-            font.family: "Google Sans Flex"
-            font.pointSize: 11
-            font.weight: Font.DemiBold
-            font.variableAxes: { "wdth": 80 }
-            color: Colours.palette.m3onSurface
-            font.letterSpacing: 2.0
-            opacity: 0.60
-
-            SequentialAnimation on opacity {
-                loops: Animation.Infinite
-                NumberAnimation { to: 0.25; duration: 1500; easing.type: Easing.InOutQuad }
-                NumberAnimation { to: 0.85; duration: 1500; easing.type: Easing.InOutQuad }
-            }
-        }
     }
 
     // ── ACTIVE view: Clean Centered Login Panel ───────────────────

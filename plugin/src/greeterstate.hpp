@@ -71,8 +71,6 @@ signals:
 
 private:
     void loadFromDisk();
-    QString findWritablePath() const;
-    QString findReadablePath() const;
 
     bool m_use12Hour{false};
     int m_avatarShape{19}; // Default Cookie9Sided

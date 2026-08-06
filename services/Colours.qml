@@ -194,11 +194,6 @@ Singleton {
         }
     }
 
-    // Transparent variant helpers (simple alpha overlay)
-    readonly property QtObject tPalette: QtObject {
-        readonly property color m3surface:                 Qt.alpha(root.palette.m3surface, 0.82)
-        readonly property color m3surfaceContainer:        Qt.alpha(root.palette.m3surfaceContainer, 0.85)
-        readonly property color m3surfaceContainerHigh:    Qt.alpha(root.palette.m3surfaceContainerHigh, 0.88)
-        readonly property color m3surfaceContainerHighest: Qt.alpha(root.palette.m3surfaceContainerHighest, 0.92)
-    }
+    // All surfaces opaque (tPalette aliases palette)
+    readonly property M3Palette tPalette: root.palette
 }
