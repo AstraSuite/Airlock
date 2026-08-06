@@ -275,7 +275,9 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: schemeRow.modelData.flavour ?? ""
+                                text: schemeRow.modelData.name === "dynamic"
+                                    ? (schemeRow.modelData.displayName || "Dynamic")
+                                    : (schemeRow.modelData.flavour ? (schemeRow.modelData.flavour.charAt(0).toUpperCase() + schemeRow.modelData.flavour.slice(1)) : "")
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 11
                                 font.weight: Font.Medium
@@ -285,7 +287,9 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: schemeRow.modelData.name ?? ""
+                                text: schemeRow.modelData.name === "dynamic"
+                                    ? "Synced scheme"
+                                    : (schemeRow.modelData.name || "")
                                 font.family: "Google Sans Flex"
                                 font.pointSize: 9
                                 color: Colours.palette.m3outline

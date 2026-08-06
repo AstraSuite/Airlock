@@ -281,7 +281,21 @@ Disabled monitors become `--off`, `preferred`/`auto` modes map to
 transform names (e.g. `3` → `270`). Copy the printed flags into the
 `command` string of `/etc/greetd/config.toml` as shown above.
 
-### 5. Enable and Start greetd
+### 5. Syncing Active Desktop Scheme ("Dynamic" Scheme)
+
+To sync your current desktop Caelestia scheme to the greeter per user:
+
+```sh
+sudo caelestia-greeter --sync
+# or
+sudo caelestia-greeter -s
+```
+
+This grabs your active Caelestia scheme colors and writes them to `/var/cache/caelestia-greeter/schemes/dynamic/<user>/`. The **Dynamic** scheme will appear in the greeter's scheme picker whenever a synced user scheme is available, and automatically crossfades between user-specific dynamic schemes when switching active users on the greeter.
+
+---
+
+### 6. Enable and Start greetd
 
 ```sh
 # Disable existing display manager (e.g. sddm/gdm/lightdm) if active

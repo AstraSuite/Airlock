@@ -269,6 +269,137 @@ int setPfp(std::string source, const std::string& user) {
     return 0;
 }
 
+std::string trim(const std::string& s);
+
+// Grabs the current Caelestia scheme from the user's desktop environment and saves it
+// as the per-user "dynamic" scheme in /var/cache/caelestia-greeter/schemes/dynamic/<user>/
+int syncScheme() {
+    std::string user;
+    std::string home;
+
+    if (const char* sudoUser = std::getenv("SUDO_USER"); sudoUser != nullptr && *sudoUser != '\0') {
+        user = sudoUser;
+        if (struct passwd* pw = ::getpwnam(sudoUser); pw != nullptr && pw->pw_dir != nullptr) {
+            home = pw->pw_dir;
+        }
+    } else if (const char* u = std::getenv("USER"); u != nullptr && *u != '\0') {
+        user = u;
+        if (const char* h = std::getenv("HOME"); h != nullptr) {
+            home = h;
+        }
+    }
+
+    if (user.empty()) {
+        user = "default";
+    }
+
+    if (home.empty()) {
+        if (user != "default") {
+            home = "/home/" + user;
+        } else {
+            home = "/root";
+        }
+    }
+
+    const std::string cacheHome = home + "/.cache";
+    const std::string configHome = home + "/.config";
+
+    std::string pyScript =
+        "import json, sys\n"
+        "try:\n"
+        "    from caelestia.utils.scheme import get_scheme\n"
+        "    s = get_scheme()\n"
+        "    print(json.dumps({\"name\": s.name, \"flavour\": s.flavour, \"mode\": s.mode, \"colours\": s.colours}))\n"
+        "except Exception as e:\n"
+        "    sys.exit(1)\n";
+
+    std::vector<std::string> cmd = {
+        "env",
+        "HOME=" + home,
+        "USER=" + user,
+        "XDG_CACHE_HOME=" + cacheHome,
+        "XDG_CONFIG_HOME=" + configHome,
+        "python3",
+        "-c",
+        pyScript
+    };
+
+    int pipeOut[2];
+    if (::pipe(pipeOut) < 0) {
+        std::fprintf(stderr, "caelestia-greeter: failed to create pipe\n");
+        return 1;
+    }
+
+    pid_t pid = ::fork();
+    if (pid < 0) {
+        std::fprintf(stderr, "caelestia-greeter: failed to fork\n");
+        ::close(pipeOut[0]);
+        ::close(pipeOut[1]);
+        return 1;
+    }
+
+    if (pid == 0) {
+        ::close(pipeOut[0]);
+        ::dup2(pipeOut[1], STDOUT_FILENO);
+        ::close(pipeOut[1]);
+
+        std::vector<char*> argv;
+        for (const auto& a : cmd) argv.push_back(const_cast<char*>(a.c_str()));
+        argv.push_back(nullptr);
+        ::execvp(argv[0], argv.data());
+        ::_exit(127);
+    }
+
+    ::close(pipeOut[1]);
+
+    std::string jsonOutput;
+    char buf[1024];
+    ssize_t n;
+    while ((n = ::read(pipeOut[0], buf, sizeof(buf) - 1)) > 0) {
+        buf[n] = '\0';
+        jsonOutput += buf;
+    }
+    ::close(pipeOut[0]);
+
+    int status = 0;
+    ::waitpid(pid, &status, 0);
+
+    if (status != 0 || trim(jsonOutput).empty()) {
+        std::fprintf(stderr, "caelestia-greeter: error: failed to retrieve current scheme from caelestia for user '%s'\n", user.c_str());
+        return 1;
+    }
+
+    const std::string dynamicDir = "/var/cache/caelestia-greeter/schemes/dynamic/" + user;
+    if (!mkdirs(dynamicDir)) {
+        std::fprintf(stderr, "caelestia-greeter: error: could not create '%s'\n", dynamicDir.c_str());
+        return 1;
+    }
+
+    const std::string darkFile = dynamicDir + "/dark.json";
+    const std::string lightFile = dynamicDir + "/light.json";
+
+    std::ofstream outDark(darkFile, std::ios::trunc);
+    std::ofstream outLight(lightFile, std::ios::trunc);
+
+    if (!outDark || !outLight) {
+        std::fprintf(stderr, "caelestia-greeter: error: could not open dynamic scheme files for writing\n");
+        return 1;
+    }
+
+    outDark << jsonOutput;
+    outLight << jsonOutput;
+
+    outDark.close();
+    outLight.close();
+
+    ::chmod(darkFile.c_str(), 0644);
+    ::chmod(lightFile.c_str(), 0644);
+
+    std::printf("caelestia-greeter: synced dynamic scheme for user '%s' to %s/\n",
+                user.c_str(), dynamicDir.c_str());
+    return 0;
+}
+
 // Finds an asset file on disk across installed paths and local relative paths.
 std::string findAssetPath(const std::string& filename) {
     std::vector<std::string> candidates = {
@@ -665,6 +796,11 @@ void printUsage() {
         "                           the specified kiosk compositor ('cage' or 'hyprland');\n"
         "                           run with sudo.\n"
         "\n"
+        "  --sync | -s              grab the active user's current Caelestia scheme\n"
+        "                           and save it as the 'custom' scheme in the greeter's\n"
+        "                           cache (/var/cache/caelestia-greeter/schemes/custom/default/);\n"
+        "                           run with sudo.\n"
+        "\n"
         "  --set-pfp FILE            copy FILE into the shared avatar store\n"
         "                           (/var/cache/caelestia-greeter/avatars/<user>)\n"
         "                           as the profile picture for the current user;\n"
@@ -860,6 +996,8 @@ int main(int argc, char** argv) {
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return 0;
+        } else if (arg == "--sync" || arg == "-s") {
+            return syncScheme();
         } else if (arg == "--kiosk" || arg == "-k") {
             return configureKiosk(takeValue());
         } else if (arg == "--set-pfp") {

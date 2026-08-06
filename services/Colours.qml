@@ -37,6 +37,26 @@ Singleton {
         }
     }
 
+    // Sync with UserDiscovery changes for per-user settings and dynamic scheme crossfading
+    Connections {
+        target: UserDiscovery
+        function onCurrentUserChanged() {
+            const user = UserDiscovery.currentUser;
+            if (user && user.length > 0) {
+                GreeterState.activeUser = user;
+                SchemeDiscovery.activeUser = user;
+            }
+            root.schemeName = GreeterState.schemeName;
+            root.flavour = GreeterState.schemeFlavour;
+            root._mode = GreeterState.schemeMode;
+            root.use12Hour = GreeterState.use12Hour;
+            root.lavaLampEnabled = GreeterState.lavaLampEnabled;
+            root.avatarShape = GreeterState.avatarShape;
+            root.avatarShapeName = GreeterState.avatarShapeName;
+            root.reloadColours();
+        }
+    }
+
     // Greeter-specific persisted settings
     property bool use12Hour: GreeterState.use12Hour
     property bool lavaLampEnabled: GreeterState.lavaLampEnabled
@@ -120,7 +140,11 @@ Singleton {
     }
 
     function reloadColours() {
-        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, root.flavour, root._mode);
+        let targetFlavour = root.flavour;
+        if (root.schemeName === "dynamic") {
+            targetFlavour = UserDiscovery.currentUser || root.flavour;
+        }
+        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, targetFlavour, root._mode);
         if (fastColours && Object.keys(fastColours).length > 0) {
             _applyColoursMap(fastColours);
         }
@@ -135,7 +159,7 @@ Singleton {
             stopPreview();
             return;
         }
-        if (name === root.schemeName && flavour === root.flavour) {
+        if (name === root.schemeName && flavour === root.flavour && name !== "dynamic") {
             stopPreview();
             return;
         }
@@ -143,7 +167,12 @@ Singleton {
         root.previewSchemeName = name;
         root.previewFlavour = flavour;
 
-        const fastColours = SchemeDiscovery.getSchemeColours(name, flavour, root._mode);
+        let targetFlavour = flavour;
+        if (name === "dynamic") {
+            targetFlavour = UserDiscovery.currentUser || flavour;
+        }
+
+        const fastColours = SchemeDiscovery.getSchemeColours(name, targetFlavour, root._mode);
         if (fastColours && Object.keys(fastColours).length > 0) {
             _applyColoursMap(fastColours);
         }
@@ -178,6 +207,11 @@ Singleton {
     }
 
     Component.onCompleted: {
+        const user = UserDiscovery.currentUser;
+        if (user && user.length > 0) {
+            GreeterState.activeUser = user;
+            SchemeDiscovery.activeUser = user;
+        }
         reloadColours();
     }
 

@@ -18,6 +18,7 @@ class GreeterState : public QObject {
     QML_ELEMENT
     QML_SINGLETON
 
+    Q_PROPERTY(QString activeUser READ activeUser WRITE setActiveUser NOTIFY activeUserChanged)
     Q_PROPERTY(bool use12Hour READ use12Hour WRITE setUse12Hour NOTIFY use12HourChanged)
     Q_PROPERTY(int avatarShape READ avatarShape WRITE setAvatarShape NOTIFY avatarShapeChanged)
     Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
@@ -43,6 +44,9 @@ public:
             QDir::tempPath() + QStringLiteral("/caelestia-greeter.json")
         };
     }
+
+    QString activeUser() const { return m_activeUser; }
+    Q_INVOKABLE void setActiveUser(const QString &user);
 
     bool use12Hour() const { return m_use12Hour; }
     void setUse12Hour(bool v);
@@ -78,6 +82,7 @@ public:
     Q_INVOKABLE void saveSession(const QString &username, const QString &sessionKey);
 
 signals:
+    void activeUserChanged();
     void use12HourChanged();
     void avatarShapeChanged();
     void avatarShapeNameChanged();
@@ -89,7 +94,9 @@ signals:
 
 private:
     void loadFromDisk();
+    void updateActiveUserSettings(const QString &oldUser);
 
+    QString m_activeUser;
     bool m_use12Hour{false};
     int m_avatarShape{19}; // Default Cookie9Sided
     QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
@@ -99,6 +106,7 @@ private:
     QString m_schemeFlavour{QStringLiteral("default")};
     QString m_schemeMode{QStringLiteral("dark")};
     QJsonObject m_userSessions;
+    QJsonObject m_userSettings;
 
     QFileSystemWatcher *m_watcher{nullptr};
     bool m_isSaving{false};

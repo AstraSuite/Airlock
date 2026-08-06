@@ -83,6 +83,63 @@ QString GreeterState::stateFilePath() const
     return QDir::tempPath() + QStringLiteral("/caelestia-greeter.json");
 }
 
+void GreeterState::setActiveUser(const QString &user)
+{
+    if (user.isEmpty() || m_activeUser == user) return;
+
+    if (!m_activeUser.isEmpty()) {
+        QJsonObject cur;
+        cur[QStringLiteral("use12Hour")] = m_use12Hour;
+        cur[QStringLiteral("avatarShape")] = m_avatarShape;
+        cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
+        cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
+        cur[QStringLiteral("schemeName")] = m_schemeName;
+        cur[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
+        cur[QStringLiteral("schemeMode")] = m_schemeMode;
+        m_userSettings[m_activeUser] = cur;
+    }
+
+    m_activeUser = user;
+
+    if (m_userSettings.contains(user)) {
+        QJsonObject u = m_userSettings.value(user).toObject();
+        if (u.contains(QStringLiteral("use12Hour"))) m_use12Hour = u.value(QStringLiteral("use12Hour")).toBool(m_use12Hour);
+        if (u.contains(QStringLiteral("avatarShape"))) m_avatarShape = u.value(QStringLiteral("avatarShape")).toInt(m_avatarShape);
+        if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);
+        if (u.contains(QStringLiteral("lavaLampEnabled"))) m_lavaLampEnabled = u.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
+        if (u.contains(QStringLiteral("schemeName"))) m_schemeName = u.value(QStringLiteral("schemeName")).toString(m_schemeName);
+        if (u.contains(QStringLiteral("schemeFlavour"))) m_schemeFlavour = u.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
+        if (u.contains(QStringLiteral("schemeMode"))) m_schemeMode = u.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
+    }
+
+    // Fallback if dynamic scheme is selected but user has no dynamic scheme on disk
+    if (m_schemeName.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
+        bool hasDyn = false;
+        for (const QString &basePath : {QStringLiteral("/var/cache/caelestia-greeter/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
+            const QString p = basePath + QStringLiteral("/dynamic/") + user;
+            if (QFile::exists(p + QStringLiteral("/dark.json")) || QFile::exists(p + QStringLiteral("/light.json"))) {
+                hasDyn = true;
+                break;
+            }
+        }
+        if (!hasDyn) {
+            m_schemeName = QStringLiteral("caelestia");
+            m_schemeFlavour = QStringLiteral("default");
+        }
+    }
+
+    emit activeUserChanged();
+    emit use12HourChanged();
+    emit avatarShapeChanged();
+    emit avatarShapeNameChanged();
+    emit lavaLampEnabledChanged();
+    emit schemeNameChanged();
+    emit schemeFlavourChanged();
+    emit schemeModeChanged();
+
+    save();
+}
+
 void GreeterState::loadFromDisk()
 {
     const QString path = stateFilePath();
@@ -99,8 +156,14 @@ void GreeterState::loadFromDisk()
     if (root.contains(QStringLiteral("lastUser"))) {
         m_lastUser = root.value(QStringLiteral("lastUser")).toString();
     }
+    if (m_activeUser.isEmpty() && !m_lastUser.isEmpty()) {
+        m_activeUser = m_lastUser;
+    }
     if (root.contains(QStringLiteral("userSessions"))) {
         m_userSessions = root.value(QStringLiteral("userSessions")).toObject();
+    }
+    if (root.contains(QStringLiteral("userSettings"))) {
+        m_userSettings = root.value(QStringLiteral("userSettings")).toObject();
     }
 
     QJsonObject s = root.contains(QStringLiteral("settings"))
@@ -136,6 +199,33 @@ void GreeterState::loadFromDisk()
     } else if (s.contains(QStringLiteral("mode"))) {
         m_schemeMode = s.value(QStringLiteral("mode")).toString(m_schemeMode);
     }
+
+    if (!m_activeUser.isEmpty() && m_userSettings.contains(m_activeUser)) {
+        QJsonObject u = m_userSettings.value(m_activeUser).toObject();
+        if (u.contains(QStringLiteral("use12Hour"))) m_use12Hour = u.value(QStringLiteral("use12Hour")).toBool(m_use12Hour);
+        if (u.contains(QStringLiteral("avatarShape"))) m_avatarShape = u.value(QStringLiteral("avatarShape")).toInt(m_avatarShape);
+        if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);
+        if (u.contains(QStringLiteral("lavaLampEnabled"))) m_lavaLampEnabled = u.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
+        if (u.contains(QStringLiteral("schemeName"))) m_schemeName = u.value(QStringLiteral("schemeName")).toString(m_schemeName);
+        if (u.contains(QStringLiteral("schemeFlavour"))) m_schemeFlavour = u.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
+        if (u.contains(QStringLiteral("schemeMode"))) m_schemeMode = u.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
+    }
+
+    // Fallback if dynamic scheme is selected but active user has no dynamic scheme on disk
+    if (!m_activeUser.isEmpty() && m_schemeName.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
+        bool hasDyn = false;
+        for (const QString &basePath : {QStringLiteral("/var/cache/caelestia-greeter/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
+            const QString p = basePath + QStringLiteral("/dynamic/") + m_activeUser;
+            if (QFile::exists(p + QStringLiteral("/dark.json")) || QFile::exists(p + QStringLiteral("/light.json"))) {
+                hasDyn = true;
+                break;
+            }
+        }
+        if (!hasDyn) {
+            m_schemeName = QStringLiteral("caelestia");
+            m_schemeFlavour = QStringLiteral("default");
+        }
+    }
 }
 
 void GreeterState::save()
@@ -143,11 +233,24 @@ void GreeterState::save()
     m_isSaving = true;
     const QString targetPath = stateFilePath();
 
+    if (!m_activeUser.isEmpty()) {
+        QJsonObject cur;
+        cur[QStringLiteral("use12Hour")] = m_use12Hour;
+        cur[QStringLiteral("avatarShape")] = m_avatarShape;
+        cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
+        cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
+        cur[QStringLiteral("schemeName")] = m_schemeName;
+        cur[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
+        cur[QStringLiteral("schemeMode")] = m_schemeMode;
+        m_userSettings[m_activeUser] = cur;
+    }
+
     QJsonObject root;
     if (!m_lastUser.isEmpty()) {
         root[QStringLiteral("lastUser")] = m_lastUser;
     }
     root[QStringLiteral("userSessions")] = m_userSessions;
+    root[QStringLiteral("userSettings")] = m_userSettings;
 
     QJsonObject s;
     s[QStringLiteral("use12Hour")] = m_use12Hour;
