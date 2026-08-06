@@ -104,17 +104,22 @@ sudo caelestia-greeter --set-pfp ~/Pictures/avatar.png
 
 You can run `caelestia-greeter` inside either **Cage** (lightweight kiosk compositor) or **Hyprland**.
 
-#### Quick Setup via `--kiosk`
+#### Quick Setup via `-k` / `--kiosk`
 
-You can automatically generate the greetd configuration files using the `-k` / `--kiosk` flag:
+The `caelestia-greeter` binary provides a `-k` / `--kiosk` command to automatically deploy the greetd configurations:
 
 ```sh
-# Automatic setup for Cage:
+# Deploy Cage configuration to /etc/greetd/config.toml:
 sudo caelestia-greeter -k cage
 
-# Or automatic setup for Hyprland:
+# Or deploy Hyprland configuration to /etc/greetd/config.toml and /etc/greetd/hyprland.lua:
 sudo caelestia-greeter -k hyprland
 ```
+
+- **`-k cage` / `--kiosk cage`**: Copies [`assets/greetd.toml.example`](assets/greetd.toml.example) directly into `/etc/greetd/config.toml` configured to launch `cage -s -- caelestia-greeter`.
+- **`-k hyprland` / `--kiosk hyprland`**: Configures `/etc/greetd/config.toml` to launch `start-hyprland -- -c /etc/greetd/hyprland.lua` and copies the kiosk configuration [`assets/hyprland.lua.example`](assets/hyprland.lua.example) to `/etc/greetd/hyprland.lua`.
+
+---
 
 #### Manual Configuration
 
