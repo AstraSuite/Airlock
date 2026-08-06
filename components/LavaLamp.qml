@@ -13,6 +13,8 @@ Item {
 
     property bool blurry: false
     property bool initialized: false
+    property real randomizeWidth: 0
+    property real randomizeHeight: 0
 
     readonly property list<int> shapePool: [
         MaterialShape.Circle,
@@ -56,6 +58,9 @@ Item {
         if (width <= 0 || height <= 0)
             return;
 
+        randomizeWidth = width;
+        randomizeHeight = height;
+
         for (let i = 0; i < shapes.count; i++) {
             const s = shapes.itemAt(i);
             if (s) {
@@ -66,13 +71,18 @@ Item {
         initialized = true;
     }
 
+    // Re-seed when the surface actually changes size. The window may map with
+    // a small default size before the compositor's fullscreen configure lands,
+    // which would otherwise lock every shape into a corner of the final screen.
     onWidthChanged: {
-        if (!initialized && width > 0 && height > 0)
+        if (width > 0 && height > 0
+                && (!initialized || Math.abs(width - randomizeWidth) > 32 || Math.abs(height - randomizeHeight) > 32))
             randomizePositions();
     }
 
     onHeightChanged: {
-        if (!initialized && width > 0 && height > 0)
+        if (width > 0 && height > 0
+                && (!initialized || Math.abs(width - randomizeWidth) > 32 || Math.abs(height - randomizeHeight) > 32))
             randomizePositions();
     }
 
