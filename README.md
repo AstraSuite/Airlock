@@ -8,8 +8,10 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 
 - **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
 - **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**
+- **[caelestia-cli](https://github.com/caelestia-dots/cli)** (or `caelestia-cli-git` / `dim-caelestia-cli-git`) — provides the Caelestia scheme used by `--sync`
+- **[caelestia-shell](https://github.com/caelestia-dots/shell)** (or `caelestia-shell-git` / `dim-caelestia-shell-git`) — provides the M3Shapes QML module used by the UI
 - **[cage](https://github.com/nicowillis/cage)** (recommended lightweight kiosk Wayland compositor)
-- **[wlr-randr](https://sr.ht/~emersion/wlr-randr/)** (only needed when using the monitor options)
+- **[wlr-randr](https://sr.ht/~emersion/wlr-randr/)** (optional, only needed when using the monitor options)
 - **Qt 6.6+** (Core, Qml, Quick, Quick3D)
 - **CMake >= 3.19** and **Ninja**
 
