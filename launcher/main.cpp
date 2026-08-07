@@ -144,6 +144,60 @@ int runCommand(const std::vector<std::string>& args, std::string* outStderr = nu
     return -1;
 }
 
+// Runs `args` and captures stdout + stderr output. Returns the exit status.
+int runCommandCaptureOutput(const std::vector<std::string>& args, std::string* outText = nullptr) {
+    std::vector<char*> argv;
+    argv.reserve(args.size() + 1);
+    for (const auto& arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv.push_back(nullptr);
+
+    int pipefd[2];
+    if (outText != nullptr) {
+        if (::pipe(pipefd) < 0) {
+            return -1;
+        }
+    }
+
+    const pid_t pid = ::fork();
+    if (pid < 0) {
+        if (outText != nullptr) {
+            ::close(pipefd[0]);
+            ::close(pipefd[1]);
+        }
+        return -1;
+    }
+    if (pid == 0) {
+        if (outText != nullptr) {
+            ::close(pipefd[0]);
+            ::dup2(pipefd[1], STDOUT_FILENO);
+            ::dup2(pipefd[1], STDERR_FILENO);
+            ::close(pipefd[1]);
+        }
+        ::execvp(argv[0], argv.data());
+        ::_exit(127);
+    }
+
+    if (outText != nullptr) {
+        ::close(pipefd[1]);
+        char buf[512];
+        ssize_t n;
+        while ((n = ::read(pipefd[0], buf, sizeof(buf) - 1)) > 0) {
+            buf[n] = '\0';
+            *outText += buf;
+        }
+        ::close(pipefd[0]);
+    }
+
+    int status = 0;
+    ::waitpid(pid, &status, 0);
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    return -1;
+}
+
 // Expands a leading '~' (to `home`) and any $VAR / ${VAR} environment
 // references in a path.
 std::string expandPath(std::string path, const std::string& home) {
@@ -760,6 +814,40 @@ int convertFile(const std::string& path) {
     return 0;
 }
 
+void printVersion() {
+    std::printf("caelestia-greeter 1.0.0\n");
+
+    std::string greetdVer;
+    if (commandAvailable("greetd")) {
+        std::vector<std::string> cmd = {"sh", "-c", "pacman -Q greetd 2>/dev/null | head -n 1 || dpkg-query -W -f='${Package} ${Version}\\n' greetd 2>/dev/null || rpm -q greetd 2>/dev/null || greetd --version 2>&1 || true"};
+        std::string out;
+        if (runCommandCaptureOutput(cmd, &out) == 0 && !trim(out).empty()) {
+            greetdVer = trim(out);
+            size_t nl = greetdVer.find('\n');
+            if (nl != std::string::npos) greetdVer = trim(greetdVer.substr(0, nl));
+        }
+    }
+    if (greetdVer.empty()) {
+        greetdVer = "greetd version unknown";
+    }
+    std::printf("%s\n", greetdVer.c_str());
+
+    std::string qsVer;
+    if (commandAvailable("quickshell")) {
+        std::vector<std::string> cmd = {"quickshell", "--version"};
+        std::string out;
+        if (runCommandCaptureOutput(cmd, &out) == 0 && !trim(out).empty()) {
+            qsVer = trim(out);
+            size_t nl = qsVer.find('\n');
+            if (nl != std::string::npos) qsVer = trim(qsVer.substr(0, nl));
+        }
+    }
+    if (qsVer.empty()) {
+        qsVer = "quickshell version unknown";
+    }
+    std::printf("%s\n", qsVer.c_str());
+}
+
 void printUsage() {
     std::printf(
         "usage: caelestia-greeter [monitor options...] [quickshell options...]\n"
@@ -773,7 +861,6 @@ void printUsage() {
         "                           option applies to it until the next --output\n"
         "\n"
         "  --on | --off | --toggle  enable / disable / toggle the current output\n"
-        "\n"
         "  --mode WxH[@RATE]        set the current output mode (e.g. 1920x1080@144)\n"
         "  --custom-mode WxH[@RATE] set custom mode with exact refresh rate\n"
         "  --preferred              use the output's preferred mode\n"
@@ -791,14 +878,16 @@ void printUsage() {
         "\n"
         "Other modes:\n"
         "\n"
+        "  --version | -v           display version of caelestia-greeter, greetd, and quickshell\n"
+        "\n"
         "  --kiosk COMPOSITOR | -k COMPOSITOR\n"
         "                           configure greetd (/etc/greetd/config.toml) for\n"
         "                           the specified kiosk compositor ('cage' or 'hyprland');\n"
         "                           run with sudo.\n"
         "\n"
         "  --sync | -s              grab the active user's current Caelestia scheme\n"
-        "                           and save it as the 'custom' scheme in the greeter's\n"
-        "                           cache (/var/cache/caelestia-greeter/schemes/custom/default/);\n"
+        "                           and save it as the 'dynamic' scheme in the greeter's\n"
+        "                           cache (/var/cache/caelestia-greeter/schemes/dynamic/<user>/);\n"
         "                           run with sudo.\n"
         "\n"
         "  --set-pfp FILE            copy FILE into the shared avatar store\n"
@@ -995,6 +1084,9 @@ int main(int argc, char** argv) {
 
         if (arg == "--help" || arg == "-h") {
             printUsage();
+            return 0;
+        } else if (arg == "--version" || arg == "-v") {
+            printVersion();
             return 0;
         } else if (arg == "--sync" || arg == "-s") {
             return syncScheme();
