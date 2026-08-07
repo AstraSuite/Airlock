@@ -19,6 +19,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifndef CAELESTIA_GREETER_VERSION
+#define CAELESTIA_GREETER_VERSION "unknown"
+#endif
+
 namespace {
 
 [[noreturn]] void die(const std::string& msg) {
@@ -815,7 +819,7 @@ int convertFile(const std::string& path) {
 }
 
 void printVersion() {
-    std::printf("caelestia-greeter 1.0.0\n");
+    std::printf("caelestia-greeter %s\n", CAELESTIA_GREETER_VERSION);
 
     std::string greetdVer;
     if (commandAvailable("greetd")) {

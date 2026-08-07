@@ -8,7 +8,7 @@ set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml")
 
 qt_add_qml_module(caelestia-greeter-plugin
     URI Caelestia.Greeter
-    VERSION 1.0
+    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     SOURCES
         src/greeterstate.hpp
         src/greeterstate.cpp

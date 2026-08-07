@@ -33,6 +33,7 @@ stdenv.mkDerivation {
   cmakeFlags = [
     "-DFETCHCONTENT_SOURCE_DIR_M3SHAPES_EXTERNAL=${m3shapes}"
     "-DINSTALL_QSCONFDIR=etc/xdg/quickshell/caelestia-greeter"
+    "-DCAELESTIA_GREETER_VERSION=${version}"
   ];
 
   postInstall = ''
