@@ -20,7 +20,19 @@ Rectangle {
 
     color: Colours.palette.m3background
 
-    property bool panelVisible: false
+    property bool panelVisible: Colours.skipClockPage
+    property bool entered: false
+
+    Component.onCompleted: {
+        Qt.callLater(() => { root.entered = true; });
+    }
+
+    Connections {
+        target: Colours
+        function onSkipClockPageChanged() {
+            root.panelVisible = Colours.skipClockPage;
+        }
+    }
 
     function exitTestMode() {
         root.exitRequested();
@@ -30,6 +42,10 @@ Rectangle {
     Item {
         id: bgLayer
         anchors.fill: parent
+        opacity: root.entered ? 1 : 0
+        scale: root.entered ? 1 : 0.97
+        Behavior on opacity { NumberAnimation { duration: 650; easing.type: Easing.OutCubic } }
+        Behavior on scale   { NumberAnimation { duration: 650; easing.type: Easing.OutCubic } }
 
         // Hardware-Accelerated Lava Lamp (blurs only when login panel opens)
         LavaLamp {
@@ -42,11 +58,11 @@ Rectangle {
         // IDLE view: Titan One Stacked Clock
         Item {
             anchors.fill: parent
-            opacity: root.panelVisible ? 0 : 1
-            scale: root.panelVisible ? 0.90 : 1
+            opacity: root.entered ? (root.panelVisible ? 0 : 1) : 0
+            scale: root.entered ? (root.panelVisible ? 0.90 : 1) : 0.92
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
-            Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+            Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 
             IdleClock {
                 anchors.centerIn: parent
@@ -91,8 +107,11 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.leftMargin: 24
-        anchors.topMargin: 24
+        anchors.topMargin: root.entered ? 24 : 8
+        opacity: root.entered ? 1 : 0
         z: 2000
+        Behavior on opacity          { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on anchors.topMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
 
     // ── Active Clock & Date (Top-Right Corner) ────────────────────
@@ -101,22 +120,21 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 28
-        anchors.topMargin: 24
+        anchors.topMargin: root.entered ? 24 : 8
         z: 2000
-        opacity: root.panelVisible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+        opacity: root.entered ? (root.panelVisible ? 1 : 0) : 0
+        Behavior on opacity          { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+        Behavior on anchors.topMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
 
     // ── ACTIVE view: Clean Centered Login Panel ───────────────────
     Item {
         anchors.fill: parent
-        opacity: root.panelVisible ? 1 : 0
-        scale: root.panelVisible ? 1 : 1.05
+        opacity: root.entered ? (root.panelVisible ? 1 : 0) : 0
+        scale: root.entered ? (root.panelVisible ? 1 : 1.05) : 0.94
         visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
-        Behavior on scale   { NumberAnimation { duration: 380; easing.type: Easing.OutCubic } }
-
-
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 
         Center {
             id: centerPanel
@@ -147,12 +165,15 @@ Rectangle {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: 24
-        anchors.bottomMargin: 24
+        anchors.bottomMargin: root.entered ? 24 : 8
+        opacity: root.entered ? 1 : 0
         z: 2000
         onExitRequested: root.exitTestMode()
         onIsOpenChanged: {
             if (!isOpen) keyCapture.forceActiveFocus();
         }
+        Behavior on opacity             { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
 
     // ── Morphing Schemes Modal (Bottom-Right) ────────────────────
@@ -161,12 +182,15 @@ Rectangle {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: 24
-        anchors.bottomMargin: 24
+        anchors.bottomMargin: root.entered ? 24 : 8
+        opacity: root.entered ? 1 : 0
         z: 2000
         onUnfocusRequested: keyCapture.forceActiveFocus()
         onIsOpenChanged: {
             if (!isOpen) keyCapture.forceActiveFocus();
         }
+        Behavior on opacity             { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
 
     // ── Dedicated Key Capture Handler ─────────────────────────────

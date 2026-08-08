@@ -516,7 +516,7 @@ Item {
                     }
                 }
 
-                // ── Row 4: Lava Lamp Animation (Last in Appearance Group) ────
+                // ── Row 4: Lava Lamp Animation (Middle in Appearance Group) ────
                 Rectangle {
                     id: rowAnim
                     Layout.fillWidth: true
@@ -524,8 +524,8 @@ Item {
                     radius: 4
                     topLeftRadius: 4
                     topRightRadius: 4
-                    bottomLeftRadius: 14
-                    bottomRightRadius: 14
+                    bottomLeftRadius: 4
+                    bottomRightRadius: 4
 
                     color: stateAnim.containsMouse
                         ? Colours.tPalette.m3surfaceContainerHighest
@@ -548,7 +548,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            text: "Lava lamp background"
+                            text: "Lava lamp animation"
                             font.family: "Google Sans Flex"
                             font.pointSize: 11
                             font.weight: Font.Medium
@@ -558,7 +558,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            text: "Animate blobs on idle screen"
+                            text: "Dynamic fluid background shapes"
                             font.family: "Google Sans Flex"
                             font.pointSize: 8
                             color: Colours.palette.m3outline
@@ -595,6 +595,92 @@ Item {
                                 text: Colours.lavaLampEnabled ? "check" : "close"
                                 fontStyle.pointSize: 11
                                 color: Colours.lavaLampEnabled
+                                    ? Colours.palette.m3primary
+                                    : Colours.palette.m3surfaceContainerHigh
+                            }
+                        }
+                    }
+                }
+
+                // ── Row 5: Skip Clock Screen (Last in Appearance Group) ────
+                Rectangle {
+                    id: rowSkipClock
+                    Layout.fillWidth: true
+                    implicitHeight: 48
+                    radius: 4
+                    topLeftRadius: 4
+                    topRightRadius: 4
+                    bottomLeftRadius: 14
+                    bottomRightRadius: 14
+
+                    color: stateSkipClock.containsMouse
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    StateLayer {
+                        id: stateSkipClock
+                        onClicked: Colours.skipClockPage = !Colours.skipClockPage
+                    }
+
+                    // Left Text Column
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.right: switchSkipClock.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "Skip clock screen"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 11
+                            font.weight: Font.Medium
+                            color: Colours.palette.m3onSurface
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: "Open login card immediately on startup"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 8
+                            color: Colours.palette.m3outline
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
+                    Rectangle {
+                        id: switchSkipClock
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 42
+                        implicitHeight: 24
+                        radius: 12
+                        color: Colours.skipClockPage
+                            ? Colours.palette.m3primary
+                            : Colours.tPalette.m3surfaceContainerHighest
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Rectangle {
+                            id: thumbSkipClock
+                            width: 18
+                            height: 18
+                            radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: Colours.skipClockPage ? parent.width - width - 3 : 3
+                            color: Colours.skipClockPage ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: Colours.skipClockPage ? "check" : "close"
+                                fontStyle.pointSize: 11
+                                color: Colours.skipClockPage
                                     ? Colours.palette.m3primary
                                     : Colours.palette.m3surfaceContainerHigh
                             }

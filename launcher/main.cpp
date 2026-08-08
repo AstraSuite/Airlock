@@ -1023,12 +1023,53 @@ bool applyRandr(const std::vector<std::string>& randrArgs) {
     return anySuccess;
 }
 
+void ensureXkbConfig() {
+    if (const char* layout = std::getenv("XKB_DEFAULT_LAYOUT"); layout != nullptr && *layout != '\0') {
+        return; // Already set in environment
+    }
+
+    std::string detectedLayout;
+    if (isFile("/etc/vconsole.conf")) {
+        std::ifstream f("/etc/vconsole.conf");
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line.rfind("KEYMAP=", 0) == 0 || line.rfind("XKBLAYOUT=", 0) == 0) {
+                const size_t eq = line.find('=');
+                if (eq != std::string::npos) {
+                    detectedLayout = trim(stripQuotes(line.substr(eq + 1)));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (detectedLayout.empty() && isFile("/etc/default/keyboard")) {
+        std::ifstream f("/etc/default/keyboard");
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line.rfind("XKBLAYOUT=", 0) == 0) {
+                const size_t eq = line.find('=');
+                if (eq != std::string::npos) {
+                    detectedLayout = trim(stripQuotes(line.substr(eq + 1)));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!detectedLayout.empty()) {
+        ::setenv("XKB_DEFAULT_LAYOUT", detectedLayout.c_str(), 1);
+    }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     if (const char* qpa = std::getenv("QT_QPA_PLATFORM"); qpa == nullptr || *qpa == '\0') {
         ::setenv("QT_QPA_PLATFORM", "wayland", 0);
     }
+
+    ensureXkbConfig();
 
     // Resolve the configuration directory.
     const std::string dir = scriptDir(argv[0]);

@@ -140,17 +140,26 @@ Item {
             testAuthTimer.restart();
             return;
         }
-        if (Greetd.state === GreetdState.Inactive) {
-            if (_user) {
-                root.pendingPassword = root.passwordBuffer;
-                root.passwordBuffer = "";
-                Greetd.createSession(_user.username);
-            }
-        } else if (Greetd.state === GreetdState.Authenticating) {
-            const pass = root.passwordBuffer.length > 0 ? root.passwordBuffer : root.pendingPassword;
+
+        if (root.passwordBuffer.length === 0 && root.pendingPassword.length === 0) {
+            return;
+        }
+
+        const typedPassword = root.passwordBuffer.length > 0 ? root.passwordBuffer : root.pendingPassword;
+
+        if (Greetd.state === GreetdState.Authenticating) {
             root.passwordBuffer = "";
             root.pendingPassword = "";
-            Greetd.respond(pass);
+            Greetd.respond(typedPassword);
+        } else {
+            if (root._user) {
+                if (Greetd.state !== GreetdState.Inactive) {
+                    Greetd.cancelSession();
+                }
+                root.pendingPassword = typedPassword;
+                root.passwordBuffer = "";
+                Greetd.createSession(root._user.username);
+            }
         }
     }
 
