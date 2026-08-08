@@ -4,6 +4,12 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 
 ---
 
+## Screenshots
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
+
+---
+
 ## Dependencies
 
 - **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
