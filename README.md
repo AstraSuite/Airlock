@@ -131,7 +131,7 @@ sudo caelestia-greeter -k hyprland
 
 ### 4. PAM Configuration & Keyring Auto-Unlock (GNOME Keyring / KWallet)
 
-To ensure GNOME Keyring and KWallet automatically unlock when logging in through `greetd`, verify that `/etc/pam.d/greetd` includes `pam_gnome_keyring.so` and `pam_kwallet5.so`:
+To ensure GNOME Keyring and KWallet automatically unlock when logging in through `greetd`, verify that `/etc/pam.d/greetd` includes `pam_gnome_keyring.so` and `pam_kwallet5.so` **before** `system-local-login` in `auth`:
 
 ```pam
 # /etc/pam.d/greetd - PAM configuration for greetd
@@ -139,16 +139,21 @@ To ensure GNOME Keyring and KWallet automatically unlock when logging in through
 
 auth       required     pam_securetty.so
 auth       requisite    pam_nologin.so
-auth       include      system-local-login
 auth       optional     pam_gnome_keyring.so
 auth       optional     pam_kwallet5.so
+auth       include      system-local-login
 
 account    include      system-local-login
+
+password   include      system-local-login
 
 session    include      system-local-login
 session    optional     pam_gnome_keyring.so auto_start
 session    optional     pam_kwallet5.so auto_start
 ```
+
+> [!IMPORTANT]
+> `pam_gnome_keyring.so` and `pam_kwallet5.so` **must** be listed **before** `auth include system-local-login` in the `auth` section so that the PAM keyring module can capture the cleartext password before `system-local-login` finishes authentication.
 
 An example configuration file is provided in [`assets/pam.d/greetd.example`](assets/pam.d/greetd.example).
 
