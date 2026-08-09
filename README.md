@@ -119,7 +119,7 @@ You can run `caelestia-greeter` inside either **Cage** (lightweight kiosk compos
 #### Quick Setup via `-k` / `--kiosk`
 
 > [!CAUTION]
-> `--kiosk` replaces existing greed configuration files; make sure you back them up first if you have a customized setup.
+> `--kiosk` replaces existing greetd configuration files; make sure you back them up first if you have a customized setup.
 
 The `caelestia-greeter` binary provides a `-k` / `--kiosk` command to automatically deploy the greetd configurations:
 
