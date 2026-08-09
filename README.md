@@ -5,21 +5,27 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 ---
 
 ## Screenshots
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
+<img width="1920" height="1080" alt="Caelestia Greeter idle screen" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
+<img width="1920" height="1080" alt="Caelestia Greeter login screen" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
 
 ---
 
 ## Dependencies
 
-- **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
+**Runtime:**
 - **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**
-- **[caelestia-cli](https://github.com/caelestia-dots/cli)** (or `caelestia-cli-git` / `dim-caelestia-cli-git`) — provides the Caelestia scheme used by `--sync`
-- **[caelestia-shell](https://github.com/caelestia-dots/shell)** (or `caelestia-shell-git` / `dim-caelestia-shell-git`) — provides the M3Shapes QML module used by the UI
-- **[cage](https://github.com/nicowillis/cage)** (recommended lightweight kiosk Wayland compositor)
-- **[wlr-randr](https://sr.ht/~emersion/wlr-randr/)** (optional, only needed when using the monitor options)
-- **Qt 6.6+** (Core, Qml, Quick, Quick3D)
-- **CMake >= 3.19** and **Ninja**
+- **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
+- **Qt 6.6+** (Core, DBus, Qml, Quick, Quick3D)
+- **M3Shapes QML module** — Provided by [caelestia-shell](https://github.com/caelestia-dots/shell) (or `caelestia-shell-git`/`dim-caelestia-shell-git`)
+- (Recommended) **[cage](https://github.com/cage-kiosk/cage)** — Lightweight kiosk Wayland compositor
+
+**Build:**
+- **CMake** >= 3.19
+- **Ninja**
+
+**Optional:**
+- **[caelestia-cli](https://github.com/caelestia-dots/cli)** (or `caelestia-cli-git` / `dim-caelestia-cli-git`) — Required to use `--sync` (provides the Caelestia scheme)
+- **[wlr-randr](https://gitlab.freedesktop.org/emersion/wlr-randr)** — Only necessary if using the monitor flags
 
 ---
 
@@ -41,7 +47,7 @@ sudo cmake --install build
 ```
 
 This installs:
-- The `Caelestia.Greeter` QML plugin to `/usr/lib/qt6/qml/Caelestia/Greeter/`
+- The `Caelestia.Greeter` QML plugin under the system Qt6 QML module directory (typically `/usr/lib/qt6/qml/Caelestia/Greeter/`)
 - The launcher binary to `/usr/bin/caelestia-greeter`
 - The shell configuration to `/etc/xdg/quickshell/caelestia-greeter/`
 
@@ -77,17 +83,18 @@ In your `flake.nix`:
 
 ### 1. Create the `greeter` User and Cache Directory
 
-If not already created by your package manager:
+Most distributions create the greeter system user when installing greetd. If yours didn't, create it manually:
 
 ```sh
-# Create system user for greetd
-sudo useradd -r -M -s /usr/bin/nologin -d /var/cache/caelestia-greeter greeter
+# Create the greeter user only if your greetd package did not provide one
+getent passwd greeter >/dev/null || \
+    sudo useradd -r -M -s /usr/bin/nologin -d /var/cache/caelestia-greeter greeter
+
+# Add the user to groups required by the greeter
 sudo usermod -aG video,input greeter
 
-# Setup state cache directory for persistent settings & session memory
-sudo mkdir -p /var/cache/caelestia-greeter
-sudo chown -R greeter:greeter /var/cache/caelestia-greeter
-sudo chmod 755 /var/cache/caelestia-greeter
+# Create the state/cache directory for persistent settings & session memory
+sudo install -d -m 0755 -o greeter -g greeter /var/cache/caelestia-greeter
 ```
 
 > [!NOTE]
@@ -98,11 +105,8 @@ sudo chmod 755 /var/cache/caelestia-greeter
 For user profile pictures (pfps) to work properly with greetd, the user needs to set their profile picture using the `--set-pfp` flag:
 
 ```sh
-# Set profile picture for the current user
-caelestia-greeter --set-pfp /path/to/avatar.png
-
-# Or using sudo (it will automatically identify your user from SUDO_USER)
-sudo caelestia-greeter --set-pfp ~/Pictures/avatar.png
+# Automatically identifies your user from SUDO_USER
+sudo caelestia-greeter --set-pfp /path/to/avatar.png
 ```
 
 > [!NOTE]
@@ -113,6 +117,9 @@ sudo caelestia-greeter --set-pfp ~/Pictures/avatar.png
 You can run `caelestia-greeter` inside either **Cage** (lightweight kiosk compositor) or **Hyprland**.
 
 #### Quick Setup via `-k` / `--kiosk`
+
+> [!CAUTION]
+> `--kiosk` replaces existing greed configuration files; make sure you back them up first if you have a customized setup.
 
 The `caelestia-greeter` binary provides a `-k` / `--kiosk` command to automatically deploy the greetd configurations:
 
@@ -129,11 +136,14 @@ sudo caelestia-greeter -k hyprland
 
 ---
 
-### 4.  Configuration & Keyring Auto-Unlock (GNOME Keyring / KWallet)
+### 4. PAM Configuration & Keyring Auto-Unlock (GNOME Keyring)
 
-To ensure GNOME Keyring and automatically unlock when logging in through `greetd`, verify that `/etc/.d/greetd` includes `_gnome_keyring.so`:
+> [!IMPORTANT]
+> This example targets Arch Linux. On other distros, add `pam_gnome_keyring.so` to your existing greetd PAM configuration rather than replacing the entire file verbatim.
 
-```pam
+To ensure GNOME Keyring automatically unlocks when logging in through `greetd`, verify that `/etc/pam.d/greetd` includes `pam_gnome_keyring.so`:
+
+```
 # /etc/pam.d/greetd - PAM configuration for greetd
 #%PAM-1.0
 
@@ -153,7 +163,7 @@ session    optional     pam_gnome_keyring.so auto_start
 An example configuration file is provided in [`assets/pam.d/greetd.example`](assets/pam.d/greetd.example).
 
 > [!TIP]
-> When installing via the AUR package (`caelestia-greeter` or `caelestia-greeter-git`), `/etc/pam.d/greetd` is automatically configured with GNOME Keyring and KWallet auto-unlock entries during post-install.
+> When installing via the AUR package (`caelestia-greeter` or `caelestia-greeter-git`), `/etc/pam.d/greetd` is automatically configured with GNOME Keyring auto-unlock entries during post-install.
 
 ---
 
@@ -235,6 +245,9 @@ end)
 
 When using Hyprland as the compositor, you can customize any aspect of the greeter environment in `/etc/greetd/hyprland.lua`:
 
+> [!IMPORTANT]
+> Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
+
 - **Cursor Theme & Size**:
   Set your cursor theme and size via the unified `cursor_theme` and `cursor_size` variables:
   ```lua
@@ -246,9 +259,6 @@ When using Hyprland as the compositor, you can customize any aspect of the greet
   hl.env("XCURSOR_THEME", cursor_theme)
   hl.env("XCURSOR_SIZE", cursor_size)
   ```
-  > [!NOTE]
-  > Because greetd runs under the system `greeter` user, custom cursor themes must be installed system-wide in `/usr/share/icons/` (e.g. `/usr/share/icons/Bibata-Modern-Classic`) with standard read permissions (`chmod -R 755`).
-
 - **Keyboard Layout & Input**:
   Configure keyboard layout, variants, repeat rates, and touchpad behaviors:
   ```lua
@@ -261,7 +271,6 @@ When using Hyprland as the compositor, you can customize any aspect of the greet
     },
   }
   ```
-
 - **Monitors & Scaling**:
   Define explicit monitor modes and scaling factors:
   ```lua
@@ -269,7 +278,7 @@ When using Hyprland as the compositor, you can customize any aspect of the greet
   hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "2560x0", scale = 1 })
   ```
 
-### 4. Multi-Monitor Configuration
+### 5. Multi-Monitor Configuration
 
 By default the greeter is shown on every connected output. The launcher
 passes monitor options through to `wlr-randr`, so you can pick which
@@ -285,13 +294,13 @@ command = "cage -s -- caelestia-greeter --output DP-2 --mode 2560x1440@120 --pos
 ```
 
 Supported options: `--only`, `--output NAME`, `--on`, `--off`,
-`--toggle`, `--mode WxH[@RATE]`, `--custom-mode`, `--preferred`,
+`--toggle`, `--mode WxH[@RATE]`, `--custom-mode WxH[@RATE]`, `--preferred`,
 `--pos X,Y`, `--left-of`, `--right-of`, `--above`, `--below`,
 `--transform`, `--scale`, `--adaptive-sync`.
 
 The options are applied to the running compositor via the
-`wlr-output-management` protocol before quickshell starts; all other
-arguments are passed through to quickshell. Run `caelestia-greeter --help`
+`wlr-output-management` protocol before Quickshell starts; all other
+arguments are passed through to Quickshell. Run `caelestia-greeter --help`
 for the full list.
 
 #### Converting an Existing Hyprland Monitor Configuration
@@ -309,7 +318,7 @@ blocks (as generated by HyprMod) — and prints the equivalent
 `caelestia-greeter` flags:
 
 ```sh
-caelestia-greeter --output DP-1 --mode 1920x1080@280.00Hz --pos 1920,333 --scale 1 --output DP-2 --mode 1920x1080@143.98Hz --pos 0,333 --scale 1
+caelestia-greeter --output DP-1 --custom-mode 1920x1080@280.00Hz --pos 1920,333 --scale 1 --output DP-2 --custom-mode 1920x1080@143.98Hz --pos 0,333 --scale 1
 ```
 
 Disabled monitors become `--off`, `preferred`/`auto` modes map to
@@ -317,7 +326,7 @@ Disabled monitors become `--off`, `preferred`/`auto` modes map to
 transform names (e.g. `3` → `270`). Copy the printed flags into the
 `command` string of `/etc/greetd/config.toml` as shown above.
 
-### 5. Syncing Active Desktop Scheme ("Dynamic" Scheme)
+### 6. Syncing Active Desktop Scheme ("Dynamic" Scheme)
 
 To sync your current desktop Caelestia scheme to the greeter per user:
 
@@ -331,15 +340,14 @@ This grabs your active Caelestia scheme colors and writes them to `/var/cache/ca
 
 ---
 
-### 6. Enable and Start greetd
+### 7. Enable greetd
 
 ```sh
-# Disable existing display manager (e.g. sddm/gdm/lightdm) if active
-sudo systemctl disable sddm.service || true
+# Replace "sddm.service" with your currently enabled display manager (e.g., sddm/gdm/lightdm)
+sudo systemctl disable sddm.service
 
 # Enable and start greetd
-sudo systemctl enable greetd.service
-sudo systemctl start greetd.service
+sudo systemctl enable --now greetd.service
 ```
 
 ---
@@ -353,8 +361,8 @@ You can test and iterate on the greeter locally without logging out:
 cmake -B build -G Ninja
 cmake --build build
 
-# Launch quickshell with local build plugin path
+# Launch Quickshell with local build plugin path
 QML2_IMPORT_PATH=./build/qml quickshell -p .
 ```
 
-When ran outside greetd, authentication is safely simulated in test mode.
+When run outside greetd, authentication is safely simulated in test mode.
