@@ -17,7 +17,7 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 - **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
 - **Qt 6.6+** (Core, DBus, Qml, Quick, Quick3D)
 - **M3Shapes QML module** — Provided by [caelestia-shell](https://github.com/caelestia-dots/shell) (or `caelestia-shell-git`/`dim-caelestia-shell-git`)
-- (Recommended) **[cage](https://github.com/cage-kiosk/cage)** — Lightweight kiosk Wayland compositor
+- **A wayland compositor** — Example configurations are supplied for use with [Hyprland](https://github.com/hyprwm/hyprland) and [Cage](https://github.com/cage-kiosk/cage)
 
 **Build:**
 - **CMake** >= 3.19
