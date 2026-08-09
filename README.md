@@ -328,7 +328,7 @@ transform names (e.g. `3` → `270`). Copy the printed flags into the
 
 ### 6. Syncing Active Desktop Scheme ("Dynamic" Scheme)
 
-To sync your current desktop Caelestia scheme to the greeter per user:
+The `-s` / `--sync` flag copies your active desktop Caelestia scheme into the greeter:
 
 ```sh
 sudo caelestia-greeter --sync
@@ -336,7 +336,52 @@ sudo caelestia-greeter --sync
 sudo caelestia-greeter -s
 ```
 
-This grabs your active Caelestia scheme colors and writes them to `/var/cache/caelestia-greeter/schemes/dynamic/<user>/`. The **Dynamic** scheme will appear in the greeter's scheme picker whenever a synced user scheme is available, and automatically crossfades between user-specific dynamic schemes when switching active users on the greeter.
+It grabs the scheme currently applied by caelestia-cli — the active scheme name, flavour, mode, and generated colors — and writes it to `/var/cache/caelestia-greeter/schemes/dynamic/<user>/` as two files: `dark.json` and `light.json`.
+
+Once synced, a **Dynamic** scheme option appears in the greeter's scheme modal **for your specific user**. Selecting it renders the greeter with the colors of your desktop scheme instead of a built-in one. When multiple users have synced schemes, the greeter automatically picks the matching dynamic scheme and crossfades between them as you switch users on the login screen. Re-run `--sync` whenever you change your desktop scheme to refresh it.
+
+> [!NOTE]
+> Because the command is run via `sudo`, it identifies your account from `SUDO_USER` and reads your scheme from your real home directory (`~/.config/caelestia` and `~/.cache/caelestia`). Run it with `sudo` so it targets your user rather than the restricted `greeter` user.
+
+#### Running without a password (sudoers)
+
+To let the sync run non-interactively (e.g. from a hook, see below) without prompting for a password, add a sudoers rule allowing only this command:
+
+```sh
+# Replace <your-username> with your actual user name
+sudo tee /etc/sudoers.d/caelestia-greeter-sync << EOF
+<your-username> ALL=(ALL) NOPASSWD: /usr/bin/caelestia-greeter -s, /usr/bin/caelestia-greeter --sync
+EOF
+sudo chmod 440 /etc/sudoers.d/caelestia-greeter-sync
+```
+
+This lets you run `caelestia-greeter --sync` (or `-s`) with `sudo` without a password, while every other invocation of `caelestia-greeter` still requires authentication. Verify it with the non-interactive form:
+
+```sh
+sudo -n caelestia-greeter --sync
+```
+
+Using `sudo -n` makes the command fail immediately instead of hanging when no rule is in place — exactly what a background hook wants.
+
+#### Syncing automatically when the scheme or wallpaper changes
+
+caelestia-cli runs a configurable `postHook` after applying a theme (`theme.postHook`) and after setting a wallpaper (`wallpaper.postHook`). Point both at the sync command in `~/.config/caelestia/cli.json`:
+
+```json
+{
+    "theme": {
+        "postHook": "sudo -n caelestia-greeter --sync"
+    },
+    "wallpaper": {
+        "postHook": "sudo -n caelestia-greeter --sync"
+    }
+}
+```
+
+Now whenever you change your Caelestia scheme or your wallpaper, the greeter's **Dynamic** scheme for your user is refreshed automatically — no need to run the command manually.
+
+> [!TIP]
+> These hooks execute in your user's environment, so the sudoers rule above is required for `sudo -n` to succeed without a password prompt.
 
 ---
 
