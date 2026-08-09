@@ -2,6 +2,7 @@ module qs.greeter.components
 ActiveClock 1.0 ActiveClock.qml
 Anim 1.0 Anim.qml
 Avatar 1.0 Avatar.qml
+BatteryIcon 1.0 BatteryIcon.qml
 CAnim 1.0 CAnim.qml
 Clock 1.0 Clock.qml
 FetchCard 1.0 FetchCard.qml

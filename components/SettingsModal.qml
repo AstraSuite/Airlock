@@ -762,6 +762,120 @@ Item {
                         }
                     }
                 }
+
+                // ── Section 3 Header: Battery (Visible in test mode) ─
+                Text {
+                    visible: !Greetd.available
+                    text: "Battery"
+                    font.family: "Google Sans Flex"
+                    font.pointSize: 9
+                    font.weight: Font.DemiBold
+                    color: Colours.palette.m3onSurfaceVariant
+                    Layout.leftMargin: 4
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 4
+                }
+
+                // ── Row: Charging (First in Battery Group) ──────────
+                Rectangle {
+                    id: rowCharge
+                    visible: !Greetd.available
+                    Layout.fillWidth: true
+                    implicitHeight: 48
+                    topLeftRadius: 14
+                    topRightRadius: 14
+                    bottomLeftRadius: 4
+                    bottomRightRadius: 4
+
+                    color: stateCharge.containsMouse
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    StateLayer {
+                        id: stateCharge
+                        onClicked: BatteryState.simCharging = !BatteryState.simCharging
+                    }
+
+                    // Left Text Column
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.right: switchCharge.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "Charging"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 11
+                            font.weight: Font.Medium
+                            color: Colours.palette.m3onSurface
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: "Simulate plugged-in power"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 8
+                            color: Colours.palette.m3outline
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
+                    Rectangle {
+                        id: switchCharge
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 42
+                        implicitHeight: 24
+                        radius: 12
+                        color: BatteryState.simCharging
+                            ? Colours.palette.m3primary
+                            : Colours.tPalette.m3surfaceContainerHighest
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Rectangle {
+                            id: thumbCharge
+                            width: 18
+                            height: 18
+                            radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: BatteryState.simCharging ? parent.width - width - 3 : 3
+                            color: BatteryState.simCharging ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: BatteryState.simCharging ? "check" : "close"
+                                fontStyle.pointSize: 11
+                                color: BatteryState.simCharging
+                                    ? Colours.palette.m3primary
+                                    : Colours.palette.m3surfaceContainerHigh
+                            }
+                        }
+                    }
+                }
+
+                // ── Row: Battery Level Slider (Last in Battery Group) ──
+                SliderRow {
+                    visible: !Greetd.available
+                    Layout.fillWidth: true
+                    topLeftRadius: 4
+                    topRightRadius: 4
+                    bottomLeftRadius: 14
+                    bottomRightRadius: 14
+
+                    icon: "battery_full"
+                    label: "Battery level"
+                    value: BatteryState.simPercentage / 100
+                    onMoved: v => BatteryState.simPercentage = v * 100
+                }
             }
         }
     }

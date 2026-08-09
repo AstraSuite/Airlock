@@ -101,17 +101,31 @@ Rectangle {
         }
     }
 
-    // ── Power Actions (Top-Left Corner) ──────────────────────────
-    PowerMenu {
-        id: powerMenu
+    // ── Power Actions + Battery (Top-Left Corner) ────────────────
+    Row {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.leftMargin: 24
         anchors.topMargin: root.entered ? 24 : 8
-        opacity: root.entered ? 1 : 0
+        spacing: 10
         z: 2000
+        opacity: root.entered ? 1 : 0
         Behavior on opacity          { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
         Behavior on anchors.topMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+
+        PowerMenu {
+            id: powerMenu
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        BatteryIcon {
+            id: batteryIcon
+            anchors.verticalCenter: parent.verticalCenter
+            visible: BatteryState.available
+            size: 50
+            percentage: BatteryState.percentage / 100
+            charging: BatteryState.charging
+        }
     }
 
     // ── Active Clock & Date (Top-Right Corner) ────────────────────
