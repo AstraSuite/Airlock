@@ -31,6 +31,21 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 
 ## Building & Installation
 
+### Arch Linux (AUR)
+
+Install one of the packages from the AUR using your preferred AUR helper:
+
+- **[caelestia-greeter](https://aur.archlinux.org/packages/caelestia-greeter)** — stable release
+- **[caelestia-greeter-git](https://aur.archlinux.org/packages/caelestia-greeter-git)** — latest development version
+
+```sh
+# With paru
+paru -S caelestia-greeter
+
+# Or the git version
+paru -S caelestia-greeter-git
+```
+
 ### Manual Installation (CMake)
 
 ```sh
