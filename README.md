@@ -46,7 +46,7 @@ paru -S caelestia-greeter
 paru -S caelestia-greeter-git
 ```
 
-## If using a manual install or a fork of the Caelestia shell and or cli, you can create and install a fake package to satisfy the dependencies:
+If using a manual install or a fork of the Caelestia shell and or cli, you can create and install a fake package to satisfy the dependencies:
 ```sh
 mkdir -p /tmp/dummy-caelestia && cd /tmp/dummy-caelestia
 nano PKGBUILD
