@@ -46,6 +46,19 @@ paru -S caelestia-greeter
 paru -S caelestia-greeter-git
 ```
 
+If using a manual install or a fork of the Caelestia shell and or cli, you can install with these flags:
+
+```sh
+paru -S caelestia-greeter --assume-installed caelestia-shell --assume-installed caelestia-cli
+```
+
+If migrating from a manual install, first run these commands:
+```sh
+sudo rm -rf /etc/xdg/quickshell/caelestia-greeter
+sudo rm -rf /usr/lib/qt6/qml/Caelestia/Greeter
+sudo rm /usr/bin/caelestia-greeter
+```
+
 ### Manual Installation (CMake)
 
 ```sh
