@@ -216,7 +216,7 @@ Item {
                 if (root._user) {
                     GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
                 }
-                Greetd.launch(["sh", "-c", "exec \"$@\" >/dev/null 2>&1", "caelestia-session"].concat(s.exec.split(" ").filter(x => x.length > 0)));
+                Greetd.launch(s.exec.split(" ").filter(x => x.length > 0));
             }
         }
         function onError(error) {
