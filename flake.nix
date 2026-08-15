@@ -75,9 +75,9 @@
             settings = {
               default_session = {
                 command = if cfg.compositor == "cage" then
-                  "${pkgs.cage}/bin/cage -s -- ${cfg.package}/bin/caelestia-greeter"
+                  "${pkgs.cage}/bin/cage -s -- ${cfg.package}/bin/caelestia-greeter >/dev/null 2>&1"
                 else
-                  "${pkgs.hyprland}/bin/Hyprland";
+                  "${pkgs.hyprland}/bin/Hyprland >/dev/null 2>&1";
                 user = "greeter";
               };
             };

@@ -555,7 +555,7 @@ int configureKiosk(std::string compositor) {
         if (cmdPos != std::string::npos) {
             const size_t endLine = tomlContent.find('\n', cmdPos);
             tomlContent.replace(cmdPos, (endLine == std::string::npos ? tomlContent.size() : endLine) - cmdPos,
-                                "command = \"start-hyprland -- -c /etc/greetd/hyprland.lua\"");
+                                "command = \"start-hyprland -- -c /etc/greetd/hyprland.lua >/dev/null 2>&1\"");
         }
 
         std::ofstream out(tomlPath, std::ios::trunc);

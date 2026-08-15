@@ -172,8 +172,11 @@ sudo caelestia-greeter -k cage
 sudo caelestia-greeter -k hyprland
 ```
 
-- **`-k cage` / `--kiosk cage`**: Copies [`assets/greetd.toml.example`](assets/greetd.toml.example) directly into `/etc/greetd/config.toml` configured to launch `cage -s -- caelestia-greeter`.
-- **`-k hyprland` / `--kiosk hyprland`**: Configures `/etc/greetd/config.toml` to launch `start-hyprland -- -c /etc/greetd/hyprland.lua` and copies the kiosk configuration [`assets/hyprland.lua.example`](assets/hyprland.lua.example) to `/etc/greetd/hyprland.lua`.
+- **`-k cage` / `--kiosk cage`**: Copies [`assets/greetd.toml.example`](assets/greetd.toml.example) directly into `/etc/greetd/config.toml` configured to launch `cage -s -- caelestia-greeter`. Session output is silenced so no tty console screen flashes before the greeter appears.
+- **`-k hyprland` / `--kiosk hyprland`**: Configures `/etc/greetd/config.toml` to launch `start-hyprland -- -c /etc/greetd/hyprland.lua` (with output silenced) and copies the kiosk configuration [`assets/hyprland.lua.example`](assets/hyprland.lua.example) to `/etc/greetd/hyprland.lua`.
+
+> [!NOTE]
+> Both kiosk configurations redirect the compositor's stdout/stderr to `/dev/null`. Without this, Hyprland (or Cage) prints its startup logs to the tty, leaving a console screen visible before the greeter renders. Additionally, after you log in, the greeter launches your session with its output silenced, so a tty prompt no longer flashes before your desktop appears.
 
 ---
 
@@ -219,7 +222,7 @@ In `/etc/greetd/config.toml`:
 vt = 1
 
 [default_session]
-command = "cage -s -- caelestia-greeter"
+command = "cage -s -- caelestia-greeter >/dev/null 2>&1"
 user = "greeter"
 ```
 
@@ -232,7 +235,7 @@ In `/etc/greetd/config.toml`:
 vt = 1
 
 [default_session]
-command = "start-hyprland -- -c /etc/greetd/hyprland.lua"
+command = "start-hyprland -- -c /etc/greetd/hyprland.lua >/dev/null 2>&1"
 user = "greeter"
 ```
 
