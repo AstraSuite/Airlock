@@ -1,0 +1,62 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check you are on a current build first. More than one report has turned out to be
+        a fix that was already merged but not yet compiled locally.
+
+  - type: input
+    id: version
+    attributes:
+      label: Build
+      description: The package version, or the output of `git log -1 --format=%h` if you built it yourself.
+      placeholder: astra-airlock 1.0.0-1, or 8bb6db3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      description: Which part of Airlock. Pick the closest one.
+      options:
+        - Login screen
+        - Session or user selection
+        - Colour scheme or sync
+        - Configuration
+        - Installation or startup
+        - Somewhere else
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The steps, in order. Include the detail that seems irrelevant — it is often the one that finds it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened, and what you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot, recording or output
+      description: |
+        Drag files straight into this box. For anything that moves, a recording beats a screenshot.
+
+  - type: input
+    id: setup
+    attributes:
+      label: Anything specific about your setup
+      description: Only if it might matter.
+      placeholder: Hyprland, greetd 0.10, two monitors

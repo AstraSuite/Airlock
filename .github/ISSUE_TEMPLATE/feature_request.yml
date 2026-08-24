@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest something Airlock should be able to do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it do
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What are you trying to get done
+      description: |
+        The problem behind the request. This matters more than the proposed solution — there is
+        often a simpler way to the same place, and knowing the goal is what finds it.
+    validations:
+      required: true
+
+  - type: input
+    id: prior_art
+    attributes:
+      label: Somewhere this already exists
+      description: If another tool does this, naming it is the fastest way to show what you mean.
+      placeholder: sddm, gtkgreet, tuigreet
