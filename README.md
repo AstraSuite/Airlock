@@ -76,7 +76,7 @@ makepkg -si
 
 ```sh
 # Clone and enter directory
-git clone https://github.com/dim-ghub/Airlock.git
+git clone https://github.com/AstraSuite/Airlock.git
 cd astra-airlock
 
 # Configure and compile C++ QML plugin
@@ -100,7 +100,7 @@ In your `flake.nix`:
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    astra-airlock.url = "github:dim-ghub/Airlock";
+    astra-airlock.url = "github:AstraSuite/Airlock";
   };
 
   outputs = { self, nixpkgs, astra-airlock, ... }: {
