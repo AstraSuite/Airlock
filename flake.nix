@@ -28,11 +28,11 @@
     formatter = forAllSystems (pkgs: pkgs.alejandra);
 
     packages = forAllSystems (pkgs: rec {
-      caelestia-greeter = pkgs.callPackage ./nix {
+      astra-airlock = pkgs.callPackage ./nix {
         inherit (inputs) m3shapes;
         quickshell = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default;
       };
-      default = caelestia-greeter;
+      default = astra-airlock;
     });
 
     devShells = forAllSystems (pkgs: {
@@ -53,14 +53,14 @@
     nixosModules.default = { config, lib, pkgs, ... }:
       with lib;
       let
-        cfg = config.services.greetd.caelestiaGreeter;
+        cfg = config.services.greetd.astraAirlock;
       in {
-        options.services.greetd.caelestiaGreeter = {
-          enable = mkEnableOption "Caelestia Greeter display manager frontend";
+        options.services.greetd.astraAirlock = {
+          enable = mkEnableOption "Airlock display manager frontend";
           package = mkOption {
             type = types.package;
             default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-            description = "The caelestia-greeter package to use.";
+            description = "The astra-airlock package to use.";
           };
           compositor = mkOption {
             type = types.enum [ "cage" "hyprland" ];
@@ -75,7 +75,7 @@
             settings = {
               default_session = {
                 command = if cfg.compositor == "cage" then
-                  "${pkgs.cage}/bin/cage -s -- ${cfg.package}/bin/caelestia-greeter >/dev/null 2>&1"
+                  "${pkgs.cage}/bin/cage -s -- ${cfg.package}/bin/astra-airlock >/dev/null 2>&1"
                 else
                   "${pkgs.hyprland}/bin/Hyprland >/dev/null 2>&1";
                 user = "greeter";
@@ -84,7 +84,7 @@
           };
 
           systemd.tmpfiles.rules = [
-            "d /var/cache/caelestia-greeter 0755 greeter greeter -"
+            "d /var/cache/astra-airlock 0755 greeter greeter -"
           ];
         };
       };

@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.19)
 
-# Version selection: pass -DCAELESTIA_GREETER_VERSION=X.Y.Z to pin the version
+# Version selection: pass -DASTRA_AIRLOCK_VERSION=X.Y.Z to pin the version
 # manually, otherwise derive it from the most recent git tag (e.g. v1.2.3).
-set(CAELESTIA_GREETER_VERSION ""
-    CACHE STRING "Version of caelestia-greeter (default: latest git tag)")
+set(ASTRA_AIRLOCK_VERSION ""
+    CACHE STRING "Version of astra-airlock (default: latest git tag)")
 
-if(NOT CAELESTIA_GREETER_VERSION)
+if(NOT ASTRA_AIRLOCK_VERSION)
     find_package(Git QUIET)
     if(GIT_EXECUTABLE)
         execute_process(
@@ -17,16 +17,16 @@ if(NOT CAELESTIA_GREETER_VERSION)
             ERROR_QUIET
         )
         if(git_describe_result EQUAL 0 AND git_describe_version)
-            string(REGEX REPLACE "^v" "" CAELESTIA_GREETER_VERSION "${git_describe_version}")
+            string(REGEX REPLACE "^v" "" ASTRA_AIRLOCK_VERSION "${git_describe_version}")
         endif()
     endif()
 endif()
 
-if(NOT CAELESTIA_GREETER_VERSION)
-    set(CAELESTIA_GREETER_VERSION "0.0.0")
+if(NOT ASTRA_AIRLOCK_VERSION)
+    set(ASTRA_AIRLOCK_VERSION "0.0.0")
 endif()
 
-project(caelestia-greeter VERSION ${CAELESTIA_GREETER_VERSION} LANGUAGES CXX)
+project(astra-airlock VERSION ${ASTRA_AIRLOCK_VERSION} LANGUAGES CXX)
 
 # Default to /usr so a plain `cmake --install build` lands in the locations
 # the launcher and README expect (/usr/bin, /etc/xdg/quickshell/...).
@@ -48,7 +48,7 @@ include(GNUInstallDirs)
 
 # System configuration is prefix-independent and always read from /etc by the
 # launcher, so install it to an absolute path regardless of CMAKE_INSTALL_PREFIX.
-set(INSTALL_QSCONFDIR "/etc/xdg/quickshell/caelestia-greeter"
+set(INSTALL_QSCONFDIR "/etc/xdg/quickshell/astra-airlock"
     CACHE STRING "Quickshell config install dir")
 
 add_subdirectory(plugin)
@@ -59,11 +59,11 @@ install(DIRECTORY components modules services assets
 install(FILES shell.qml README.md
     DESTINATION "${INSTALL_QSCONFDIR}")
 
-# Build the launcher binary (compiled, installed as caelestia-greeter)
-add_executable(caelestia-greeter-launcher launcher/main.cpp)
-target_compile_definitions(caelestia-greeter-launcher PRIVATE
-    CAELESTIA_GREETER_VERSION="${PROJECT_VERSION}"
+# Build the launcher binary (compiled, installed as astra-airlock)
+add_executable(astra-airlock-launcher launcher/main.cpp)
+target_compile_definitions(astra-airlock-launcher PRIVATE
+    ASTRA_AIRLOCK_VERSION="${PROJECT_VERSION}"
 )
-set_target_properties(caelestia-greeter-launcher PROPERTIES OUTPUT_NAME caelestia-greeter)
-install(TARGETS caelestia-greeter-launcher RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+set_target_properties(astra-airlock-launcher PROPERTIES OUTPUT_NAME astra-airlock)
+install(TARGETS astra-airlock-launcher RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 

@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Caelestia.Greeter
+import Astra.Airlock
 import "../services"
 
 // Session picker dropdown — accent-color aware, matches the panel design

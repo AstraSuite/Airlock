@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.Greetd
-import Caelestia.Greeter
+import Astra.Airlock
 import "../services"
 import "../components"
 import "../modules"

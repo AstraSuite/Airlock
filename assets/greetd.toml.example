@@ -1,6 +1,6 @@
 # Example configuration for /etc/greetd/config.toml
 #
-# Caelestia Greeter runs inside a minimal Wayland compositor like Cage or Hyprland.
+# Airlock runs inside a minimal Wayland compositor like Cage or Hyprland.
 
 [terminal]
 # The VT on which to run the greeter
@@ -8,5 +8,5 @@ vt = 1
 
 [default_session]
 # Output is silenced to prevent a tty screen from flashing before the greeter appears
-command = "cage -s -- caelestia-greeter >/dev/null 2>&1"
+command = "cage -s -- astra-airlock >/dev/null 2>&1"
 user = "greeter"

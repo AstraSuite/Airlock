@@ -8,7 +8,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Greetd
 import Caelestia.Blobs
-import Caelestia.Greeter
+import Astra.Airlock
 import M3Shapes
 import "../services"
 

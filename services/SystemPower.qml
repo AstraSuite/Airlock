@@ -2,7 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Caelestia.Greeter
+import Astra.Airlock
 
 Singleton {
     id: root

@@ -19,14 +19,14 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#ifndef CAELESTIA_GREETER_VERSION
-#define CAELESTIA_GREETER_VERSION "unknown"
+#ifndef ASTRA_AIRLOCK_VERSION
+#define ASTRA_AIRLOCK_VERSION "unknown"
 #endif
 
 namespace {
 
 [[noreturn]] void die(const std::string& msg) {
-    std::fprintf(stderr, "caelestia-greeter: error: %s\n", msg.c_str());
+    std::fprintf(stderr, "astra-airlock: error: %s\n", msg.c_str());
     std::exit(1);
 }
 
@@ -278,15 +278,15 @@ bool mkdirs(const std::string& path) {
 // avatar store.
 int setPfp(std::string source, const std::string& user) {
     if (source.empty()) {
-        std::fprintf(stderr, "caelestia-greeter: --set-pfp requires a file path\n");
+        std::fprintf(stderr, "astra-airlock: --set-pfp requires a file path\n");
         return 1;
     }
     if (user.empty()) {
-        std::fprintf(stderr, "caelestia-greeter: could not determine user name\n");
+        std::fprintf(stderr, "astra-airlock: could not determine user name\n");
         return 1;
     }
 
-    const std::string avatarDir = "/var/cache/caelestia-greeter/avatars";
+    const std::string avatarDir = "/var/cache/astra-airlock/avatars";
 
     std::string home;
     if (const char* sudo = std::getenv("SUDO_USER"); sudo != nullptr && *sudo != '\0') {
@@ -299,11 +299,11 @@ int setPfp(std::string source, const std::string& user) {
     source = expandPath(std::move(source), home.empty() ? "/home/" + user : home);
 
     if (!isFile(source)) {
-        std::fprintf(stderr, "caelestia-greeter: '%s' is not a readable regular file\n", source.c_str());
+        std::fprintf(stderr, "astra-airlock: '%s' is not a readable regular file\n", source.c_str());
         return 1;
     }
     if (!mkdirs(avatarDir)) {
-        std::fprintf(stderr, "caelestia-greeter: could not create '%s'\n", avatarDir.c_str());
+        std::fprintf(stderr, "astra-airlock: could not create '%s'\n", avatarDir.c_str());
         return 1;
     }
 
@@ -312,25 +312,25 @@ int setPfp(std::string source, const std::string& user) {
     std::ifstream in(source, std::ios::binary);
     std::ofstream out(dest, std::ios::binary | std::ios::trunc);
     if (!in || !out) {
-        std::fprintf(stderr, "caelestia-greeter: could not write '%s'\n", dest.c_str());
+        std::fprintf(stderr, "astra-airlock: could not write '%s'\n", dest.c_str());
         return 1;
     }
     out << in.rdbuf();
     out.close();
     if (!out) {
-        std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", dest.c_str());
+        std::fprintf(stderr, "astra-airlock: write to '%s' failed\n", dest.c_str());
         return 1;
     }
     ::chmod(dest.c_str(), 0644);
 
-    std::printf("caelestia-greeter: set profile picture for '%s' from '%s'\n", user.c_str(), source.c_str());
+    std::printf("astra-airlock: set profile picture for '%s' from '%s'\n", user.c_str(), source.c_str());
     return 0;
 }
 
 std::string trim(const std::string& s);
 
 // Grabs the current Caelestia scheme from the user's desktop environment and saves it
-// as the per-user "dynamic" scheme in /var/cache/caelestia-greeter/schemes/dynamic/<user>/
+// as the per-user "dynamic" scheme in /var/cache/astra-airlock/schemes/dynamic/<user>/
 int syncScheme() {
     std::string user;
     std::string home;
@@ -384,13 +384,13 @@ int syncScheme() {
 
     int pipeOut[2];
     if (::pipe(pipeOut) < 0) {
-        std::fprintf(stderr, "caelestia-greeter: failed to create pipe\n");
+        std::fprintf(stderr, "astra-airlock: failed to create pipe\n");
         return 1;
     }
 
     pid_t pid = ::fork();
     if (pid < 0) {
-        std::fprintf(stderr, "caelestia-greeter: failed to fork\n");
+        std::fprintf(stderr, "astra-airlock: failed to fork\n");
         ::close(pipeOut[0]);
         ::close(pipeOut[1]);
         return 1;
@@ -423,13 +423,13 @@ int syncScheme() {
     ::waitpid(pid, &status, 0);
 
     if (status != 0 || trim(jsonOutput).empty()) {
-        std::fprintf(stderr, "caelestia-greeter: error: failed to retrieve current scheme from caelestia for user '%s'\n", user.c_str());
+        std::fprintf(stderr, "astra-airlock: error: failed to retrieve current scheme from caelestia for user '%s'\n", user.c_str());
         return 1;
     }
 
-    const std::string dynamicDir = "/var/cache/caelestia-greeter/schemes/dynamic/" + user;
+    const std::string dynamicDir = "/var/cache/astra-airlock/schemes/dynamic/" + user;
     if (!mkdirs(dynamicDir)) {
-        std::fprintf(stderr, "caelestia-greeter: error: could not create '%s'\n", dynamicDir.c_str());
+        std::fprintf(stderr, "astra-airlock: error: could not create '%s'\n", dynamicDir.c_str());
         return 1;
     }
 
@@ -440,7 +440,7 @@ int syncScheme() {
     std::ofstream outLight(lightFile, std::ios::trunc);
 
     if (!outDark || !outLight) {
-        std::fprintf(stderr, "caelestia-greeter: error: could not open dynamic scheme files for writing\n");
+        std::fprintf(stderr, "astra-airlock: error: could not open dynamic scheme files for writing\n");
         return 1;
     }
 
@@ -453,7 +453,7 @@ int syncScheme() {
     ::chmod(darkFile.c_str(), 0644);
     ::chmod(lightFile.c_str(), 0644);
 
-    std::printf("caelestia-greeter: synced dynamic scheme for user '%s' to %s/\n",
+    std::printf("astra-airlock: synced dynamic scheme for user '%s' to %s/\n",
                 user.c_str(), dynamicDir.c_str());
     return 0;
 }
@@ -461,11 +461,11 @@ int syncScheme() {
 // Finds an asset file on disk across installed paths and local relative paths.
 std::string findAssetPath(const std::string& filename) {
     std::vector<std::string> candidates = {
-        "/etc/xdg/quickshell/caelestia-greeter/assets/" + filename,
+        "/etc/xdg/quickshell/astra-airlock/assets/" + filename,
         "./assets/" + filename,
         "../assets/" + filename,
-        "/usr/share/caelestia-greeter/assets/" + filename,
-        "/usr/local/share/caelestia-greeter/assets/" + filename
+        "/usr/share/astra-airlock/assets/" + filename,
+        "/usr/local/share/astra-airlock/assets/" + filename
     };
 
     char exePath[PATH_MAX];
@@ -475,7 +475,7 @@ std::string findAssetPath(const std::string& filename) {
         std::string exeDir = dirName(exePath);
         candidates.push_back(exeDir + "/assets/" + filename);
         candidates.push_back(exeDir + "/../assets/" + filename);
-        candidates.push_back(exeDir + "/../etc/xdg/quickshell/caelestia-greeter/assets/" + filename);
+        candidates.push_back(exeDir + "/../etc/xdg/quickshell/astra-airlock/assets/" + filename);
     }
 
     for (const auto& path : candidates) {
@@ -490,12 +490,12 @@ std::string findAssetPath(const std::string& filename) {
 std::string readAssetFile(const std::string& filename) {
     const std::string path = findAssetPath(filename);
     if (path.empty()) {
-        std::fprintf(stderr, "caelestia-greeter: could not find asset file '%s'\n", filename.c_str());
+        std::fprintf(stderr, "astra-airlock: could not find asset file '%s'\n", filename.c_str());
         return "";
     }
     std::ifstream in(path, std::ios::binary);
     if (!in) {
-        std::fprintf(stderr, "caelestia-greeter: could not open '%s' for reading\n", path.c_str());
+        std::fprintf(stderr, "astra-airlock: could not open '%s' for reading\n", path.c_str());
         return "";
     }
     std::stringstream ss;
@@ -511,13 +511,13 @@ int configureKiosk(std::string compositor) {
     }
 
     if (compLower != "cage" && compLower != "hyprland") {
-        std::fprintf(stderr, "caelestia-greeter: unknown kiosk compositor '%s' (choose 'cage' or 'hyprland')\n", compositor.c_str());
+        std::fprintf(stderr, "astra-airlock: unknown kiosk compositor '%s' (choose 'cage' or 'hyprland')\n", compositor.c_str());
         return 1;
     }
 
     const std::string greetdDir = "/etc/greetd";
     if (!mkdirs(greetdDir)) {
-        std::fprintf(stderr, "caelestia-greeter: could not create '%s' (try running with sudo)\n", greetdDir.c_str());
+        std::fprintf(stderr, "astra-airlock: could not create '%s' (try running with sudo)\n", greetdDir.c_str());
         return 1;
     }
 
@@ -531,17 +531,17 @@ int configureKiosk(std::string compositor) {
 
         std::ofstream out(tomlPath, std::ios::trunc);
         if (!out) {
-            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
+            std::fprintf(stderr, "astra-airlock: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
             return 1;
         }
         out << tomlContent;
         out.close();
         if (!out) {
-            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", tomlPath.c_str());
+            std::fprintf(stderr, "astra-airlock: write to '%s' failed\n", tomlPath.c_str());
             return 1;
         }
         ::chmod(tomlPath.c_str(), 0644);
-        std::printf("caelestia-greeter: configured greetd for Cage kiosk (%s)\n", tomlPath.c_str());
+        std::printf("astra-airlock: configured greetd for Cage kiosk (%s)\n", tomlPath.c_str());
         return 0;
     }
 
@@ -560,13 +560,13 @@ int configureKiosk(std::string compositor) {
 
         std::ofstream out(tomlPath, std::ios::trunc);
         if (!out) {
-            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
+            std::fprintf(stderr, "astra-airlock: could not write '%s' (try running with sudo)\n", tomlPath.c_str());
             return 1;
         }
         out << tomlContent;
         out.close();
         if (!out) {
-            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", tomlPath.c_str());
+            std::fprintf(stderr, "astra-airlock: write to '%s' failed\n", tomlPath.c_str());
             return 1;
         }
         ::chmod(tomlPath.c_str(), 0644);
@@ -579,18 +579,18 @@ int configureKiosk(std::string compositor) {
 
         std::ofstream luaOut(luaPath, std::ios::trunc);
         if (!luaOut) {
-            std::fprintf(stderr, "caelestia-greeter: could not write '%s' (try running with sudo)\n", luaPath.c_str());
+            std::fprintf(stderr, "astra-airlock: could not write '%s' (try running with sudo)\n", luaPath.c_str());
             return 1;
         }
         luaOut << luaContent;
         luaOut.close();
         if (!luaOut) {
-            std::fprintf(stderr, "caelestia-greeter: write to '%s' failed\n", luaPath.c_str());
+            std::fprintf(stderr, "astra-airlock: write to '%s' failed\n", luaPath.c_str());
             return 1;
         }
         ::chmod(luaPath.c_str(), 0644);
 
-        std::printf("caelestia-greeter: configured greetd for Hyprland (%s and %s)\n", tomlPath.c_str(), luaPath.c_str());
+        std::printf("astra-airlock: configured greetd for Hyprland (%s and %s)\n", tomlPath.c_str(), luaPath.c_str());
         return 0;
     }
 
@@ -713,7 +713,7 @@ void appendMonitorGroup(std::vector<std::string>& groups, const std::string& nam
 int convertFile(const std::string& path) {
     std::ifstream file(path);
     if (!file) {
-        std::fprintf(stderr, "caelestia-greeter: could not open file '%s'\n", path.c_str());
+        std::fprintf(stderr, "astra-airlock: could not open file '%s'\n", path.c_str());
         return 1;
     }
     std::ostringstream buf;
@@ -806,11 +806,11 @@ int convertFile(const std::string& path) {
     }
 
     if (groups.empty()) {
-        std::fprintf(stderr, "caelestia-greeter: no monitor configurations found in '%s'\n", path.c_str());
+        std::fprintf(stderr, "astra-airlock: no monitor configurations found in '%s'\n", path.c_str());
         return 1;
     }
 
-    std::printf("caelestia-greeter");
+    std::printf("astra-airlock");
     for (const auto& group : groups) {
         std::printf(" %s", group.c_str());
     }
@@ -819,7 +819,7 @@ int convertFile(const std::string& path) {
 }
 
 void printVersion() {
-    std::printf("caelestia-greeter %s\n", CAELESTIA_GREETER_VERSION);
+    std::printf("astra-airlock %s\n", ASTRA_AIRLOCK_VERSION);
 
     std::string greetdVer;
     if (commandAvailable("greetd")) {
@@ -854,7 +854,7 @@ void printVersion() {
 
 void printUsage() {
     std::printf(
-        "usage: caelestia-greeter [monitor options...] [quickshell options...]\n"
+        "usage: astra-airlock [monitor options...] [quickshell options...]\n"
         "\n"
         "Monitor options (applied to the running compositor via wlr-randr):\n"
         "\n"
@@ -882,7 +882,7 @@ void printUsage() {
         "\n"
         "Other modes:\n"
         "\n"
-        "  --version | -v           display version of caelestia-greeter, greetd, and quickshell\n"
+        "  --version | -v           display version of astra-airlock, greetd, and quickshell\n"
         "\n"
         "  --kiosk COMPOSITOR | -k COMPOSITOR\n"
         "                           configure greetd (/etc/greetd/config.toml) for\n"
@@ -891,18 +891,18 @@ void printUsage() {
         "\n"
         "  --sync | -s              grab the active user's current Caelestia scheme\n"
         "                           and save it as the 'dynamic' scheme in the greeter's\n"
-        "                           cache (/var/cache/caelestia-greeter/schemes/dynamic/<user>/);\n"
+        "                           cache (/var/cache/astra-airlock/schemes/dynamic/<user>/);\n"
         "                           run with sudo.\n"
         "\n"
         "  --set-pfp FILE            copy FILE into the shared avatar store\n"
-        "                           (/var/cache/caelestia-greeter/avatars/<user>)\n"
+        "                           (/var/cache/astra-airlock/avatars/<user>)\n"
         "                           as the profile picture for the current user;\n"
         "                           run with sudo. ~ and $VAR are expanded.\n"
         "\n"
         "  --convert FILE | -c FILE  read monitor configurations from a Hyprland\n"
         "                           config (plain `monitor =` lines or Lua\n"
         "                           `hl.monitor({ ... })` blocks) and print the\n"
-        "                           equivalent caelestia-greeter flags\n"
+        "                           equivalent astra-airlock flags\n"
         "\n"
         "Any other arguments are passed through to quickshell.\n");
 }
@@ -1018,7 +1018,7 @@ bool applyRandr(const std::vector<std::string>& randrArgs) {
     }
 
     if (!anySuccess && !err.empty()) {
-        std::fprintf(stderr, "caelestia-greeter: warning: could not apply wlr-randr configuration: %s\n", trim(err).c_str());
+        std::fprintf(stderr, "astra-airlock: warning: could not apply wlr-randr configuration: %s\n", trim(err).c_str());
     }
     return anySuccess;
 }
@@ -1076,19 +1076,19 @@ int main(int argc, char** argv) {
     std::string configPath;
     if (const char* env = std::getenv("CAELESTIA_GREETER_DIR"); env != nullptr && *env != '\0' && isDir(env)) {
         configPath = env;
-    } else if (isDir("/etc/xdg/quickshell/caelestia-greeter")) {
-        configPath = "/etc/xdg/quickshell/caelestia-greeter";
-    } else if (isDir(dir + "/../etc/xdg/quickshell/caelestia-greeter")) {
-        configPath = dir + "/../etc/xdg/quickshell/caelestia-greeter";
-    } else if (isDir("/usr/share/caelestia-greeter")) {
-        configPath = "/usr/share/caelestia-greeter";
+    } else if (isDir("/etc/xdg/quickshell/astra-airlock")) {
+        configPath = "/etc/xdg/quickshell/astra-airlock";
+    } else if (isDir(dir + "/../etc/xdg/quickshell/astra-airlock")) {
+        configPath = dir + "/../etc/xdg/quickshell/astra-airlock";
+    } else if (isDir("/usr/share/astra-airlock")) {
+        configPath = "/usr/share/astra-airlock";
     } else if (isFile(dir + "/../shell.qml")) {
         configPath = dir + "/..";
     } else {
         die("could not locate configuration directory (set CAELESTIA_GREETER_DIR)");
     }
 
-    // Configure QML import path so Caelestia.Greeter plugin is loaded
+    // Configure QML import path so Astra.Airlock plugin is loaded
     std::string qmlImport = "";
     if (const char* envQml = std::getenv("QML_IMPORT_PATH"); envQml != nullptr && *envQml != '\0') {
         qmlImport = envQml;
@@ -1172,7 +1172,7 @@ int main(int argc, char** argv) {
         }
         const std::vector<std::string> outputs = listOutputs();
         if (outputs.empty()) {
-            std::fprintf(stderr, "caelestia-greeter: warning: could not query connected outputs\n");
+            std::fprintf(stderr, "astra-airlock: warning: could not query connected outputs\n");
         } else {
             for (const auto& name : outputs) {
                 bool keep = false;

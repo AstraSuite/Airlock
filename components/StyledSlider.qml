@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Templates
-import Caelestia.Greeter
+import Astra.Airlock
 import "../services"
 import "../components"
 

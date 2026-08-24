@@ -1,4 +1,4 @@
-module qs.greeter.services
+module qs.airlock.services
 singleton Colours 1.0 Colours.qml
 singleton BatteryState 1.0 BatteryState.qml
 singleton Greeter 1.0 Greeter.qml

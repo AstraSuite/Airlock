@@ -1,4 +1,4 @@
-module qs.greeter.components
+module qs.airlock.components
 ActiveClock 1.0 ActiveClock.qml
 Anim 1.0 Anim.qml
 Avatar 1.0 Avatar.qml

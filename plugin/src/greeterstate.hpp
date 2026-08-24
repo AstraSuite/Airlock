@@ -38,11 +38,11 @@ public:
 
     static QStringList candidatePaths() {
         return {
-            QStringLiteral("/var/cache/caelestia-greeter/greeter.json"),
-            QStringLiteral("/var/lib/caelestia-greeter/greeter.json"),
+            QStringLiteral("/var/cache/astra-airlock/greeter.json"),
+            QStringLiteral("/var/lib/astra-airlock/greeter.json"),
             QDir::homePath() + QStringLiteral("/.config/caelestia/greeter.json"),
-            QDir::homePath() + QStringLiteral("/.cache/caelestia-greeter/greeter.json"),
-            QDir::tempPath() + QStringLiteral("/caelestia-greeter.json")
+            QDir::homePath() + QStringLiteral("/.cache/astra-airlock/greeter.json"),
+            QDir::tempPath() + QStringLiteral("/astra-airlock.json")
         };
     }
 

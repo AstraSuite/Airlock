@@ -5,7 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import M3Shapes
-import Caelestia.Greeter
+import Astra.Airlock
 import "../components"
 
 // Colours and theme state are managed directly via GreeterState and SchemeDiscovery.

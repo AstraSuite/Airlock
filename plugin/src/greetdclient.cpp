@@ -24,7 +24,7 @@ void GreetdClient::connectToGreetd()
 {
     const QString sockPath = QProcessEnvironment::systemEnvironment().value(QStringLiteral("GREETD_SOCK"));
     if (sockPath.isEmpty()) {
-        qWarning() << "[CaelestiaGreeter] $GREETD_SOCK not found in environment. Enabling Test Mode.";
+        qWarning() << "[AstraAirlock] $GREETD_SOCK not found in environment. Enabling Test Mode.";
         m_testMode = true;
         emit testModeChanged();
         m_connected = true;
@@ -39,9 +39,9 @@ void GreetdClient::connectToGreetd()
     if (m_socket->waitForConnected(2000)) {
         m_connected = true;
         emit connectedChanged();
-        qDebug() << "[CaelestiaGreeter] Successfully connected to greetd socket:" << sockPath;
+        qDebug() << "[AstraAirlock] Successfully connected to greetd socket:" << sockPath;
     } else {
-        qWarning() << "[CaelestiaGreeter] Failed to connect to greetd socket:" << m_socket->errorString() << ". Falling back to Test Mode.";
+        qWarning() << "[AstraAirlock] Failed to connect to greetd socket:" << m_socket->errorString() << ". Falling back to Test Mode.";
         m_testMode = true;
         emit testModeChanged();
         m_connected = true;
@@ -52,12 +52,12 @@ void GreetdClient::connectToGreetd()
 void GreetdClient::sendJson(const QJsonObject &json)
 {
     if (m_testMode) {
-        qDebug() << "[CaelestiaGreeter] [TestMode] Outgoing JSON:" << json;
+        qDebug() << "[AstraAirlock] [TestMode] Outgoing JSON:" << json;
         return;
     }
 
     if (!m_socket || m_socket->state() != QLocalSocket::ConnectedState) {
-        qWarning() << "[CaelestiaGreeter] Cannot send JSON: Socket is not connected.";
+        qWarning() << "[AstraAirlock] Cannot send JSON: Socket is not connected.";
         return;
     }
 
@@ -86,7 +86,7 @@ void GreetdClient::createSession(const QString &username)
     emit authenticatingChanged();
 
     if (m_testMode) {
-        qDebug() << "[CaelestiaGreeter] [TestMode] Created session for user:" << username;
+        qDebug() << "[AstraAirlock] [TestMode] Created session for user:" << username;
         m_authPrompt = QStringLiteral("Password: ");
         m_authMessageType = QStringLiteral("secret");
         emit authPromptChanged();
@@ -103,7 +103,7 @@ void GreetdClient::createSession(const QString &username)
 void GreetdClient::respondAuth(const QString &response)
 {
     if (m_testMode) {
-        qDebug() << "[CaelestiaGreeter] [TestMode] Responded to auth prompt with length:" << response.length();
+        qDebug() << "[AstraAirlock] [TestMode] Responded to auth prompt with length:" << response.length();
         if (response.isEmpty()) {
             m_authFailed = true;
             emit authFailedChanged();
@@ -116,7 +116,7 @@ void GreetdClient::respondAuth(const QString &response)
             emit authSuccessChanged();
             m_authenticating = false;
             emit authenticatingChanged();
-            qDebug() << "[CaelestiaGreeter] [TestMode] Auth Success! Ready to start session.";
+            qDebug() << "[AstraAirlock] [TestMode] Auth Success! Ready to start session.";
         }
         return;
     }
@@ -134,7 +134,7 @@ void GreetdClient::startSession(const QString &command)
     m_pendingCommand = command;
 
     if (m_testMode) {
-        qDebug() << "[CaelestiaGreeter] [TestMode] Starting session with command:" << command;
+        qDebug() << "[AstraAirlock] [TestMode] Starting session with command:" << command;
         emit sessionStarted();
         return;
     }
@@ -163,7 +163,7 @@ void GreetdClient::cancelSession()
     emit errorMessageChanged();
 
     if (m_testMode) {
-        qDebug() << "[CaelestiaGreeter] [TestMode] Cancelled session";
+        qDebug() << "[AstraAirlock] [TestMode] Cancelled session";
         return;
     }
 
@@ -201,14 +201,14 @@ void GreetdClient::onSocketReadyRead()
         if (parseErr.error == QJsonParseError::NoError && doc.isObject()) {
             handleMessage(doc.object());
         } else {
-            qWarning() << "[CaelestiaGreeter] JSON Parse error:" << parseErr.errorString();
+            qWarning() << "[AstraAirlock] JSON Parse error:" << parseErr.errorString();
         }
     }
 }
 
 void GreetdClient::onSocketError(QLocalSocket::LocalSocketError socketError)
 {
-    qWarning() << "[CaelestiaGreeter] Socket Error:" << socketError << m_socket->errorString();
+    qWarning() << "[AstraAirlock] Socket Error:" << socketError << m_socket->errorString();
 }
 
 void GreetdClient::handleMessage(const QJsonObject &json)
@@ -216,7 +216,7 @@ void GreetdClient::handleMessage(const QJsonObject &json)
     const QString type = json.value(QStringLiteral("type")).toString();
 
     if (type == QStringLiteral("success")) {
-        qDebug() << "[CaelestiaGreeter] Received success response from greetd";
+        qDebug() << "[AstraAirlock] Received success response from greetd";
         if (m_authenticating && !m_authSuccess) {
             // Authentication succeeded
             m_authSuccess = true;
@@ -235,11 +235,11 @@ void GreetdClient::handleMessage(const QJsonObject &json)
         m_authPrompt = json.value(QStringLiteral("auth_message")).toString();
         emit authMessageTypeChanged();
         emit authPromptChanged();
-        qDebug() << "[CaelestiaGreeter] Auth Prompt received:" << m_authPrompt << "Type:" << m_authMessageType;
+        qDebug() << "[AstraAirlock] Auth Prompt received:" << m_authPrompt << "Type:" << m_authMessageType;
     } else if (type == QStringLiteral("error")) {
         const QString errDesc = json.value(QStringLiteral("description")).toString();
         const QString errType = json.value(QStringLiteral("error_type")).toString();
-        qWarning() << "[CaelestiaGreeter] Error from greetd:" << errType << errDesc;
+        qWarning() << "[AstraAirlock] Error from greetd:" << errType << errDesc;
 
         m_errorMessage = QStringLiteral("Incorrect password. Please try again.");
         emit errorMessageChanged();

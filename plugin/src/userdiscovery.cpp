@@ -92,7 +92,7 @@ void UserDiscovery::reload()
                 realName = username;
             }
 
-            const QString cacheAvatar = QStringLiteral("/var/cache/caelestia-greeter/avatars/") + username;
+            const QString cacheAvatar = QStringLiteral("/var/cache/astra-airlock/avatars/") + username;
             const QString avatarBase = QStringLiteral("/home/") + username;
             QString avatarPath;
             if (QFile::exists(cacheAvatar)) {

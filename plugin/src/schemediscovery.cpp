@@ -28,7 +28,7 @@ QStringList SchemeDiscovery::schemeSearchPaths() const
 
     paths.append(QStringLiteral("/usr/share/caelestia/schemes"));
     paths.append(QStringLiteral("/usr/local/share/caelestia/schemes"));
-    paths.append(QStringLiteral("/var/cache/caelestia-greeter/schemes"));
+    paths.append(QStringLiteral("/var/cache/astra-airlock/schemes"));
     return paths;
 }
 

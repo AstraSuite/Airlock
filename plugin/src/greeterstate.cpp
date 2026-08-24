@@ -80,7 +80,7 @@ QString GreeterState::stateFilePath() const
             return p;
         }
     }
-    return QDir::tempPath() + QStringLiteral("/caelestia-greeter.json");
+    return QDir::tempPath() + QStringLiteral("/astra-airlock.json");
 }
 
 void GreeterState::setActiveUser(const QString &user)
@@ -117,7 +117,7 @@ void GreeterState::setActiveUser(const QString &user)
     // Fallback if dynamic scheme is selected but user has no dynamic scheme on disk
     if (m_schemeName.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
         bool hasDyn = false;
-        for (const QString &basePath : {QStringLiteral("/var/cache/caelestia-greeter/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
+        for (const QString &basePath : {QStringLiteral("/var/cache/astra-airlock/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
             const QString p = basePath + QStringLiteral("/dynamic/") + user;
             if (QFile::exists(p + QStringLiteral("/dark.json")) || QFile::exists(p + QStringLiteral("/light.json"))) {
                 hasDyn = true;
@@ -221,7 +221,7 @@ void GreeterState::loadFromDisk()
     // Fallback if dynamic scheme is selected but active user has no dynamic scheme on disk
     if (!m_activeUser.isEmpty() && m_schemeName.compare(QStringLiteral("dynamic"), Qt::CaseInsensitive) == 0) {
         bool hasDyn = false;
-        for (const QString &basePath : {QStringLiteral("/var/cache/caelestia-greeter/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
+        for (const QString &basePath : {QStringLiteral("/var/cache/astra-airlock/schemes"), QStringLiteral("/usr/share/caelestia/schemes")}) {
             const QString p = basePath + QStringLiteral("/dynamic/") + m_activeUser;
             if (QFile::exists(p + QStringLiteral("/dark.json")) || QFile::exists(p + QStringLiteral("/light.json"))) {
                 hasDyn = true;

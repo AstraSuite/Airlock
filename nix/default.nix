@@ -11,7 +11,7 @@
   wlr-randr,
 }:
 stdenv.mkDerivation {
-  pname = "caelestia-greeter";
+  pname = "astra-airlock";
   version = "1.0.2";
 
   src = ./..;
@@ -32,19 +32,19 @@ stdenv.mkDerivation {
 
   cmakeFlags = [
     "-DFETCHCONTENT_SOURCE_DIR_M3SHAPES_EXTERNAL=${m3shapes}"
-    "-DINSTALL_QSCONFDIR=etc/xdg/quickshell/caelestia-greeter"
-    "-DCAELESTIA_GREETER_VERSION=${version}"
+    "-DINSTALL_QSCONFDIR=etc/xdg/quickshell/astra-airlock"
+    "-DASTRA_AIRLOCK_VERSION=${version}"
   ];
 
   postInstall = ''
-    wrapProgram $out/bin/caelestia-greeter \
+    wrapProgram $out/bin/astra-airlock \
       --prefix PATH : ${lib.makeBinPath [ quickshell wlr-randr ]} \
       --prefix QML2_IMPORT_PATH : "$out/lib/qt6/qml:$QML2_IMPORT_PATH"
   '';
 
   meta = with lib; {
     description = "A Quickshell frontend for greetd matching Caelestia M3 design";
-    homepage = "https://github.com/dim-ghub/caelestia-greeter";
+    homepage = "https://github.com/dim-ghub/Airlock";
     license = licenses.mit;
     platforms = platforms.linux;
   };

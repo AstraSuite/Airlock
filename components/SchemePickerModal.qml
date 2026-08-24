@@ -6,7 +6,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Caelestia.Blobs
-import Caelestia.Greeter
+import Astra.Airlock
 import "../services"
 
 // Morphing Scheme Picker Modal (Bottom-Right) matching Caelestia Launcher >scheme picker:

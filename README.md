@@ -1,12 +1,12 @@
-# Caelestia Greeter
+# Airlock
 
 A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**, crafted with **[Quickshell](https://quickshell.outfoxxed.me/)** and Qt6 to seamlessly match Caelestia's **[shell](https://github.com/caelestia-dots/shell)**.
 
 ---
 
 ## Screenshots
-<img width="1920" height="1080" alt="Caelestia Greeter idle screen" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
-<img width="1920" height="1080" alt="Caelestia Greeter login screen" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
+<img width="1920" height="1080" alt="Airlock idle screen" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
+<img width="1920" height="1080" alt="Airlock login screen" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
 
 ---
 
@@ -35,15 +35,15 @@ Arch Linux (AUR)
 
 Install one of the packages from the AUR using your preferred AUR helper:
 
-- **[caelestia-greeter](https://aur.archlinux.org/packages/caelestia-greeter)** — stable release
-- **[caelestia-greeter-git](https://aur.archlinux.org/packages/caelestia-greeter-git)** — latest development version
+- **[astra-airlock](https://aur.archlinux.org/packages/astra-airlock)** — stable release
+- **[astra-airlock-git](https://aur.archlinux.org/packages/astra-airlock-git)** — latest development version
 
 ```sh
 # With paru
-paru -S caelestia-greeter
+paru -S astra-airlock
 
 # Or the git version
-paru -S caelestia-greeter-git
+paru -S astra-airlock-git
 ```
 
 If using a manual install or a fork of the Caelestia shell and or cli, you can create and install a fake package to satisfy the dependencies:
@@ -76,8 +76,8 @@ makepkg -si
 
 ```sh
 # Clone and enter directory
-git clone https://github.com/dim-ghub/caelestia-greeter.git
-cd caelestia-greeter
+git clone https://github.com/dim-ghub/Airlock.git
+cd astra-airlock
 
 # Configure and compile C++ QML plugin
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -88,9 +88,9 @@ sudo cmake --install build
 ```
 
 This installs:
-- The `Caelestia.Greeter` QML plugin under the system Qt6 QML module directory (typically `/usr/lib/qt6/qml/Caelestia/Greeter/`)
-- The launcher binary to `/usr/bin/caelestia-greeter`
-- The shell configuration to `/etc/xdg/quickshell/caelestia-greeter/`
+- The `Astra.Airlock` QML plugin under the system Qt6 QML module directory (typically `/usr/lib/qt6/qml/Astra/Airlock/`)
+- The launcher binary to `/usr/bin/astra-airlock`
+- The shell configuration to `/etc/xdg/quickshell/astra-airlock/`
 
 ### Nix / NixOS Installation
 
@@ -100,17 +100,17 @@ In your `flake.nix`:
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    caelestia-greeter.url = "github:dim-ghub/caelestia-greeter";
+    astra-airlock.url = "github:dim-ghub/Airlock";
   };
 
-  outputs = { self, nixpkgs, caelestia-greeter, ... }: {
+  outputs = { self, nixpkgs, astra-airlock, ... }: {
     nixosConfigurations.myhostname = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        caelestia-greeter.nixosModules.default
+        astra-airlock.nixosModules.default
         {
-          services.greetd.caelestiaGreeter.enable = true;
-          services.greetd.caelestiaGreeter.compositor = "cage";
+          services.greetd.astraAirlock.enable = true;
+          services.greetd.astraAirlock.compositor = "cage";
         }
       ];
     };
@@ -129,17 +129,17 @@ Most distributions create the greeter system user when installing greetd. If you
 ```sh
 # Create the greeter user only if your greetd package did not provide one
 getent passwd greeter >/dev/null || \
-    sudo useradd -r -M -s /usr/bin/nologin -d /var/cache/caelestia-greeter greeter
+    sudo useradd -r -M -s /usr/bin/nologin -d /var/cache/astra-airlock greeter
 
 # Add the user to groups required by the greeter
 sudo usermod -aG video,input greeter
 
 # Create the state/cache directory for persistent settings & session memory
-sudo install -d -m 0755 -o greeter -g greeter /var/cache/caelestia-greeter
+sudo install -d -m 0755 -o greeter -g greeter /var/cache/astra-airlock
 ```
 
 > [!NOTE]
-> Greeter UI preferences (avatar shape, 12/24h clock, idle animations, color scheme, flavour, dark/light mode, and last-used session per user) are automatically saved to `/var/cache/caelestia-greeter/greeter.json`.
+> Greeter UI preferences (avatar shape, 12/24h clock, idle animations, color scheme, flavour, dark/light mode, and last-used session per user) are automatically saved to `/var/cache/astra-airlock/greeter.json`.
 
 ### 2. Setting User Profile Pictures (Avatars)
 
@@ -147,32 +147,32 @@ For user profile pictures (pfps) to work properly with greetd, the user needs to
 
 ```sh
 # Automatically identifies your user from SUDO_USER
-sudo caelestia-greeter --set-pfp /path/to/avatar.png
+sudo astra-airlock --set-pfp /path/to/avatar.png
 ```
 
 > [!NOTE]
-> Because greetd runs under the restricted system `greeter` user, it cannot access files inside personal home directories (such as `~/.face`). Using `--set-pfp` copies the selected image into the shared avatar store (`/var/cache/caelestia-greeter/avatars/<username>`) with the correct read permissions so the greeter can display it.
+> Because greetd runs under the restricted system `greeter` user, it cannot access files inside personal home directories (such as `~/.face`). Using `--set-pfp` copies the selected image into the shared avatar store (`/var/cache/astra-airlock/avatars/<username>`) with the correct read permissions so the greeter can display it.
 
 ### 3. Configure `/etc/greetd/config.toml`
 
-You can run `caelestia-greeter` inside either **Cage** (lightweight kiosk compositor) or **Hyprland**.
+You can run `astra-airlock` inside either **Cage** (lightweight kiosk compositor) or **Hyprland**.
 
 #### Quick Setup via `-k` / `--kiosk`
 
 > [!CAUTION]
 > `--kiosk` replaces existing greetd configuration files; make sure you back them up first if you have a customized setup.
 
-The `caelestia-greeter` binary provides a `-k` / `--kiosk` command to automatically deploy the greetd configurations:
+The `astra-airlock` binary provides a `-k` / `--kiosk` command to automatically deploy the greetd configurations:
 
 ```sh
 # Deploy Cage configuration to /etc/greetd/config.toml:
-sudo caelestia-greeter -k cage
+sudo astra-airlock -k cage
 
 # Or deploy Hyprland configuration to /etc/greetd/config.toml and /etc/greetd/hyprland.lua:
-sudo caelestia-greeter -k hyprland
+sudo astra-airlock -k hyprland
 ```
 
-- **`-k cage` / `--kiosk cage`**: Copies [`assets/greetd.toml.example`](assets/greetd.toml.example) directly into `/etc/greetd/config.toml` configured to launch `cage -s -- caelestia-greeter`. Session output is silenced so no tty console screen flashes before the greeter appears.
+- **`-k cage` / `--kiosk cage`**: Copies [`assets/greetd.toml.example`](assets/greetd.toml.example) directly into `/etc/greetd/config.toml` configured to launch `cage -s -- astra-airlock`. Session output is silenced so no tty console screen flashes before the greeter appears.
 - **`-k hyprland` / `--kiosk hyprland`**: Configures `/etc/greetd/config.toml` to launch `start-hyprland -- -c /etc/greetd/hyprland.lua` (with output silenced) and copies the kiosk configuration [`assets/hyprland.lua.example`](assets/hyprland.lua.example) to `/etc/greetd/hyprland.lua`.
 
 > [!NOTE]
@@ -207,7 +207,7 @@ session    optional     pam_gnome_keyring.so auto_start
 An example configuration file is provided in [`assets/pam.d/greetd.example`](assets/pam.d/greetd.example).
 
 > [!TIP]
-> When installing via the AUR package (`caelestia-greeter` or `caelestia-greeter-git`), `/etc/pam.d/greetd` is automatically configured with GNOME Keyring auto-unlock entries during post-install.
+> When installing via the AUR package (`astra-airlock` or `astra-airlock-git`), `/etc/pam.d/greetd` is automatically configured with GNOME Keyring auto-unlock entries during post-install.
 
 ---
 
@@ -222,7 +222,7 @@ In `/etc/greetd/config.toml`:
 vt = 1
 
 [default_session]
-command = "cage -s -- caelestia-greeter >/dev/null 2>&1"
+command = "cage -s -- astra-airlock >/dev/null 2>&1"
 user = "greeter"
 ```
 
@@ -281,7 +281,7 @@ hl.env("XCURSOR_SIZE", cursor_size)
 
 -- Start the greeter on init
 hl.on("hyprland.start", function()
-  hl.exec_cmd("caelestia-greeter; hyprctl dispatch exit")
+  hl.exec_cmd("astra-airlock; hyprctl dispatch exit")
 end)
 ```
 
@@ -331,10 +331,10 @@ inside the `command` string of `/etc/greetd/config.toml`:
 
 ```toml
 # Show only on DP-2 (all other outputs are disabled)
-command = "cage -s -- caelestia-greeter --only DP-2"
+command = "cage -s -- astra-airlock --only DP-2"
 
 # Explicit layout: DP-2 at 2560x1440@120 positioned at 0,0, others off
-command = "cage -s -- caelestia-greeter --output DP-2 --mode 2560x1440@120 --pos 0,0 --output DP-1 --off --output DP-3 --off"
+command = "cage -s -- astra-airlock --output DP-2 --mode 2560x1440@120 --pos 0,0 --output DP-1 --off --output DP-3 --off"
 ```
 
 Supported options: `--only`, `--output NAME`, `--on`, `--off`,
@@ -344,7 +344,7 @@ Supported options: `--only`, `--output NAME`, `--on`, `--off`,
 
 The options are applied to the running compositor via the
 `wlr-output-management` protocol before Quickshell starts; all other
-arguments are passed through to Quickshell. Run `caelestia-greeter --help`
+arguments are passed through to Quickshell. Run `astra-airlock --help`
 for the full list.
 
 #### Converting an Existing Hyprland Monitor Configuration
@@ -353,16 +353,16 @@ If you already have your monitor layout configured in Hyprland, you can
 generate the matching flags instead of writing them by hand:
 
 ```sh
-caelestia-greeter --convert ~/.config/caelestia/hyprland-gui.lua
+astra-airlock --convert ~/.config/caelestia/hyprland-gui.lua
 ```
 
 This reads monitor definitions from a Hyprland config — either plain
 `monitor = NAME, WxH@RATE, XxY, SCALE` lines or Lua `hl.monitor({ ... })`
 blocks (as generated by HyprMod) — and prints the equivalent
-`caelestia-greeter` flags:
+`astra-airlock` flags:
 
 ```sh
-caelestia-greeter --output DP-1 --custom-mode 1920x1080@280.00Hz --pos 1920,333 --scale 1 --output DP-2 --custom-mode 1920x1080@143.98Hz --pos 0,333 --scale 1
+astra-airlock --output DP-1 --custom-mode 1920x1080@280.00Hz --pos 1920,333 --scale 1 --output DP-2 --custom-mode 1920x1080@143.98Hz --pos 0,333 --scale 1
 ```
 
 Disabled monitors become `--off`, `preferred`/`auto` modes map to
@@ -375,12 +375,12 @@ transform names (e.g. `3` → `270`). Copy the printed flags into the
 The `-s` / `--sync` flag copies your active desktop Caelestia scheme into the greeter:
 
 ```sh
-sudo caelestia-greeter --sync
+sudo astra-airlock --sync
 # or
-sudo caelestia-greeter -s
+sudo astra-airlock -s
 ```
 
-It grabs the scheme currently applied by caelestia-cli — the active scheme name, flavour, mode, and generated colors — and writes it to `/var/cache/caelestia-greeter/schemes/dynamic/<user>/` as two files: `dark.json` and `light.json`.
+It grabs the scheme currently applied by caelestia-cli — the active scheme name, flavour, mode, and generated colors — and writes it to `/var/cache/astra-airlock/schemes/dynamic/<user>/` as two files: `dark.json` and `light.json`.
 
 Once synced, a **Dynamic** scheme option appears in the greeter's scheme modal **for your specific user**. Selecting it renders the greeter with the colors of your desktop scheme instead of a built-in one. When multiple users have synced schemes, the greeter automatically picks the matching dynamic scheme and crossfades between them as you switch users on the login screen. Re-run `--sync` whenever you change your desktop scheme to refresh it.
 
@@ -393,16 +393,16 @@ To let the sync run non-interactively (e.g. from a hook, see below) without prom
 
 ```sh
 # Replace <your-username> with your actual user name
-sudo tee /etc/sudoers.d/caelestia-greeter-sync << EOF
-<your-username> ALL=(ALL) NOPASSWD: /usr/bin/caelestia-greeter -s, /usr/bin/caelestia-greeter --sync
+sudo tee /etc/sudoers.d/astra-airlock-sync << EOF
+<your-username> ALL=(ALL) NOPASSWD: /usr/bin/astra-airlock -s, /usr/bin/astra-airlock --sync
 EOF
-sudo chmod 440 /etc/sudoers.d/caelestia-greeter-sync
+sudo chmod 440 /etc/sudoers.d/astra-airlock-sync
 ```
 
-This lets you run `caelestia-greeter --sync` (or `-s`) with `sudo` without a password, while every other invocation of `caelestia-greeter` still requires authentication. Verify it with the non-interactive form:
+This lets you run `astra-airlock --sync` (or `-s`) with `sudo` without a password, while every other invocation of `astra-airlock` still requires authentication. Verify it with the non-interactive form:
 
 ```sh
-sudo -n caelestia-greeter --sync
+sudo -n astra-airlock --sync
 ```
 
 Using `sudo -n` makes the command fail immediately instead of hanging when no rule is in place — exactly what a background hook wants.
@@ -414,10 +414,10 @@ caelestia-cli runs a configurable `postHook` after applying a theme (`theme.post
 ```json
 {
     "theme": {
-        "postHook": "sudo -n caelestia-greeter --sync"
+        "postHook": "sudo -n astra-airlock --sync"
     },
     "wallpaper": {
-        "postHook": "sudo -n caelestia-greeter --sync"
+        "postHook": "sudo -n astra-airlock --sync"
     }
 }
 ```

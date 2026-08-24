@@ -59,7 +59,7 @@ Rectangle {
                     spacing: 1
 
                     Text {
-                        text: "Caelestia Greeter"
+                        text: "Airlock"
                         font.family: "Google Sans Flex"
                         font.pointSize: 10
                         font.weight: Font.Bold

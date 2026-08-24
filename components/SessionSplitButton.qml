@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import Caelestia.Greeter
+import Astra.Airlock
 import "../services"
 
 // Caelestia SplitButton matching the rest of the shell:

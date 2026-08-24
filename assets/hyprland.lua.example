@@ -1,5 +1,5 @@
 -- Example Hyprland configuration for greetd (/etc/greetd/hyprland.lua)
--- Used when running Hyprland as the kiosk compositor for caelestia-greeter
+-- Used when running Hyprland as the kiosk compositor for astra-airlock
 
 -- Default monitor conf
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
@@ -40,5 +40,5 @@ hl.env("XCURSOR_SIZE", cursor_size)
 
 -- Start the greeter on init
 hl.on("hyprland.start", function()
-  hl.exec_cmd("caelestia-greeter; hyprctl dispatch exit")
+  hl.exec_cmd("astra-airlock; hyprctl dispatch exit")
 end)

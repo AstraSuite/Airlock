@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Services.Greetd
-import Caelestia.Greeter
+import Astra.Airlock
 import "modules"
 
 ShellRoot {
@@ -26,7 +26,7 @@ ShellRoot {
     // ext-session-lock-v1 / layer-shell needed) and under Hyprland.
     FloatingWindow {
         id: greeterWindow
-        title: "Caelestia Greeter"
+        title: "Airlock"
         fullscreen: true
         visible: true
 
