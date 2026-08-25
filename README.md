@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/Airlock.png" width="140" alt="Airlock Logo">
+  <img src="assets/astra-airlock.svg" width="140" alt="Airlock Logo">
 </p>
 
 <h1 align="center">Airlock</h1>
