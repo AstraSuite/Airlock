@@ -1,4 +1,8 @@
-# Airlock
+<p align="center">
+  <img src="assets/icons/astra-airlock.svg" width="140" alt="Uplink">
+</p>
+
+<h1 align="center">Airlock</h1>
 
 A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**, crafted with **[Quickshell](https://quickshell.outfoxxed.me/)** and Qt6 to seamlessly match Caelestia's **[shell](https://github.com/caelestia-dots/shell)**.
 
