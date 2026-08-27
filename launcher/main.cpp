@@ -274,6 +274,65 @@ bool mkdirs(const std::string& path) {
     return true;
 }
 
+int copyWallpaperFile(const std::string& source, const std::string& user, bool quiet = false) {
+    const std::string wallpaperDir = "/var/cache/astra-airlock/wallpapers";
+
+    if (!isFile(source)) {
+        if (!quiet) {
+            std::fprintf(stderr, "astra-airlock: '%s' is not a readable regular file\n", source.c_str());
+        }
+        return 1;
+    }
+    if (!mkdirs(wallpaperDir)) {
+        std::fprintf(stderr, "astra-airlock: could not create '%s'\n", wallpaperDir.c_str());
+        return 1;
+    }
+
+    const std::string dest = wallpaperDir + "/" + user;
+
+    std::ifstream in(source, std::ios::binary);
+    std::ofstream out(dest, std::ios::binary | std::ios::trunc);
+    if (!in || !out) {
+        std::fprintf(stderr, "astra-airlock: could not write '%s'\n", dest.c_str());
+        return 1;
+    }
+    out << in.rdbuf();
+    out.close();
+    if (!out) {
+        std::fprintf(stderr, "astra-airlock: write to '%s' failed\n", dest.c_str());
+        return 1;
+    }
+    ::chmod(dest.c_str(), 0644);
+
+    if (!quiet) {
+        std::printf("astra-airlock: set wallpaper for '%s' from '%s'\n", user.c_str(), source.c_str());
+    }
+    return 0;
+}
+
+int setWallpaper(std::string source, const std::string& user) {
+    if (source.empty()) {
+        std::fprintf(stderr, "astra-airlock: --set-wallpaper requires a file path\n");
+        return 1;
+    }
+    if (user.empty()) {
+        std::fprintf(stderr, "astra-airlock: could not determine user name\n");
+        return 1;
+    }
+
+    std::string home;
+    if (const char* sudo = std::getenv("SUDO_USER"); sudo != nullptr && *sudo != '\0') {
+        if (struct passwd* pw = ::getpwnam(sudo); pw != nullptr && pw->pw_dir != nullptr) {
+            home = pw->pw_dir;
+        }
+    } else if (const char* h = std::getenv("HOME"); h != nullptr) {
+        home = h;
+    }
+    source = expandPath(std::move(source), home.empty() ? "/home/" + user : home);
+
+    return copyWallpaperFile(source, user, /*quiet=*/false);
+}
+
 // Sets the profile picture for `user` by copying `source` into the shared
 // avatar store.
 int setPfp(std::string source, const std::string& user) {
@@ -455,6 +514,14 @@ int syncScheme() {
 
     std::printf("astra-airlock: synced dynamic scheme for user '%s' to %s/\n",
                 user.c_str(), dynamicDir.c_str());
+    
+    const std::string wallpaperSource = home + "/.local/state/caelestia/wallpaper/current";
+    if (isFile(wallpaperSource)) {
+        if (copyWallpaperFile(wallpaperSource, user, /*quiet=*/true) == 0) {
+            std::printf("astra-airlock: synced wallpaper for user '%s'\n", user.c_str());
+        }
+    }
+
     return 0;
 }
 
@@ -899,6 +966,11 @@ void printUsage() {
         "                           as the profile picture for the current user;\n"
         "                           run with sudo. ~ and $VAR are expanded.\n"
         "\n"
+        "  --set-wallpaper FILE      copy FILE into the shared wallpaper store\n"
+        "                           (/var/cache/astra-airlock/wallpapers/<user>)\n"
+        "                           as the wallpaper for the current user;\n"
+        "                           run with sudo. ~ and $VAR are expanded.\n"
+        "\n"
         "  --convert FILE | -c FILE  read monitor configurations from a Hyprland\n"
         "                           config (plain `monitor =` lines or Lua\n"
         "                           `hl.monitor({ ... })` blocks) and print the\n"
@@ -1139,6 +1211,8 @@ int main(int argc, char** argv) {
             return configureKiosk(takeValue());
         } else if (arg == "--set-pfp") {
             return setPfp(takeValue(), currentUser());
+        }else if (arg == "--set-wallpaper") {
+            return setWallpaper(takeValue(), currentUser());
         } else if (arg == "--convert" || arg == "-c") {
             return convertFile(takeValue());
         } else if (arg == "--only") {

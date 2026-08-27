@@ -20,6 +20,7 @@ class GreeterState : public QObject {
 
     Q_PROPERTY(QString activeUser READ activeUser WRITE setActiveUser NOTIFY activeUserChanged)
     Q_PROPERTY(bool use12Hour READ use12Hour WRITE setUse12Hour NOTIFY use12HourChanged)
+    Q_PROPERTY(bool wallpaperEnabled READ wallpaperEnabled WRITE setWallpaperEnabled NOTIFY wallpaperEnabledChanged)
     Q_PROPERTY(int avatarShape READ avatarShape WRITE setAvatarShape NOTIFY avatarShapeChanged)
     Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
     Q_PROPERTY(bool lavaLampEnabled READ lavaLampEnabled WRITE setLavaLampEnabled NOTIFY lavaLampEnabledChanged)
@@ -51,6 +52,9 @@ public:
 
     bool use12Hour() const { return m_use12Hour; }
     void setUse12Hour(bool v);
+
+    bool wallpaperEnabled() const { return m_wallpaperEnabled; }
+    void setWallpaperEnabled(bool v);
 
     int avatarShape() const { return m_avatarShape; }
     void setAvatarShape(int v);
@@ -88,6 +92,7 @@ public:
 signals:
     void activeUserChanged();
     void use12HourChanged();
+    void wallpaperEnabledChanged();
     void avatarShapeChanged();
     void avatarShapeNameChanged();
     void lavaLampEnabledChanged();
@@ -103,6 +108,7 @@ private:
 
     QString m_activeUser;
     bool m_use12Hour{false};
+    bool m_wallpaperEnabled{true};
     int m_avatarShape{19}; // Default Cookie9Sided
     QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
     bool m_lavaLampEnabled{true};

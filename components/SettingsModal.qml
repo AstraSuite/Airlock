@@ -602,6 +602,91 @@ Item {
                     }
                 }
 
+                Rectangle {
+                    id: rowAnim2
+                    Layout.fillWidth: true
+                    implicitHeight: 48
+                    radius: 4
+                    topLeftRadius: 4
+                    topRightRadius: 4
+                    bottomLeftRadius: 4
+                    bottomRightRadius: 4
+
+                    color: stateAnim2.containsMouse
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    StateLayer {
+                        id: stateAnim2
+                        onClicked: Colours.wallpaperEnabled = !Colours.wallpaperEnabled
+                    }
+
+                    // Left Text Column
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.right: switchAnim2.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "Dynamic Wallpaper"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 11
+                            font.weight: Font.Medium
+                            color: Colours.palette.m3onSurface
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: "Show synced wallpaper from caelestia"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 8
+                            color: Colours.palette.m3outline
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
+                    Rectangle {
+                        id: switchAnim2
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 42
+                        implicitHeight: 24
+                        radius: 12
+                        color: Colours.wallpaperEnabled
+                            ? Colours.palette.m3primary
+                            : Colours.tPalette.m3surfaceContainerHighest
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Rectangle {
+                            id: thumbAnim2
+                            width: 18
+                            height: 18
+                            radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: Colours.wallpaperEnabled ? parent.width - width - 3 : 3
+                            color: Colours.wallpaperEnabled ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: Colours.wallpaperEnabled ? "check" : "close"
+                                fontStyle.pointSize: 11
+                                color: Colours.wallpaperEnabled
+                                    ? Colours.palette.m3primary
+                                    : Colours.palette.m3surfaceContainerHigh
+                            }
+                        }
+                    }
+                }
+
                 // ── Row 5: Skip Clock Screen (Last in Appearance Group) ────
                 Rectangle {
                     id: rowSkipClock
