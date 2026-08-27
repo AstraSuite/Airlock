@@ -94,7 +94,7 @@ makepkg -si
 
 ```sh
 # Clone and enter directory
-git clone https://github.com/AstraSuite/Airlock.git
+git clone https://github.com/AstraSuite/Airlock.git astra-airlock
 cd astra-airlock
 
 # Configure and compile C++ QML plugin
