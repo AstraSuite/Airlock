@@ -21,6 +21,7 @@ Rectangle {
     color: Colours.palette.m3background
 
     property bool panelVisible: Colours.skipClockPage
+    property bool wallpaperEnabled: Colours.wallpaperEnabled
     property bool entered: false
 
     Component.onCompleted: {
@@ -41,8 +42,12 @@ Rectangle {
     Image {
         id: wallpaper
         anchors.fill: parent
-        source: "/home/leith/.local/state/caelestia/wallpaper/current"
+        source: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
+        visible: true
+        opacity: root.wallpaperEnabled ? 1 : 0
+
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
 
     // ── Background Layer (captured by BackdropBlur in modals) ────

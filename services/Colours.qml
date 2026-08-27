@@ -19,6 +19,7 @@ Singleton {
     property string schemeName: GreeterState.schemeName || "caelestia"
     property string flavour: GreeterState.schemeFlavour || "default"
     property string variant: "tonalspot"
+    property string currentUser: UserDiscovery.currentUser || ""
 
     // Sync with GreeterState changes (e.g. from file reloads)
     Connections {
