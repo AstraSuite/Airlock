@@ -39,6 +39,17 @@ Rectangle {
         root.exitRequested();
     }
 
+    property string imageSource: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
+    onImageSourceChanged: {
+        if (wallpaper.active) {
+            wallpaper.active = false;
+            wallpaperTop.source = imageSource;
+        } else {
+            wallpaper.active = true;
+            wallpaper.source = imageSource;
+        }
+    }
+
     Image {
         id: wallpaper
         anchors.fill: parent
@@ -48,12 +59,6 @@ Rectangle {
         opacity: root.wallpaperEnabled ? 1 : 0
         scale: root.panelVisible ? 1 : 1.02
         property bool active: true
-        onSourceChanged: {
-            if (active) {
-                active = false;
-                Qt.callLater(() => { active = true; });
-            }
-        }
 
         Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
         Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
