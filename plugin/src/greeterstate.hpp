@@ -52,6 +52,9 @@ public:
     bool use12Hour() const { return m_use12Hour; }
     void setUse12Hour(bool v);
 
+    bool wallpaperEnabled() const { return m_wallpaperEnabled; }
+    void setWallpaperEnabled(bool v);
+
     int avatarShape() const { return m_avatarShape; }
     void setAvatarShape(int v);
 
@@ -88,6 +91,7 @@ public:
 signals:
     void activeUserChanged();
     void use12HourChanged();
+    void wallpaperEnabledChanged();
     void avatarShapeChanged();
     void avatarShapeNameChanged();
     void lavaLampEnabledChanged();
@@ -103,6 +107,7 @@ private:
 
     QString m_activeUser;
     bool m_use12Hour{false};
+    bool m_wallpaperEnabled{true};
     int m_avatarShape{19}; // Default Cookie9Sided
     QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
     bool m_lavaLampEnabled{true};

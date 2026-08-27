@@ -38,6 +38,13 @@ Rectangle {
         root.exitRequested();
     }
 
+    Image {
+        id: wallpaper
+        anchors.fill: parent
+        source: "/home/leith/.local/state/caelestia/wallpaper/current"
+        fillMode: Image.PreserveAspectCrop
+    }
+
     // ── Background Layer (captured by BackdropBlur in modals) ────
     Item {
         id: bgLayer

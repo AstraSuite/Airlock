@@ -50,6 +50,7 @@ Singleton {
             root.flavour = GreeterState.schemeFlavour;
             root._mode = GreeterState.schemeMode;
             root.use12Hour = GreeterState.use12Hour;
+            root.wallpaperEnabled = GreeterState.wallpaperEnabled;
             root.lavaLampEnabled = GreeterState.lavaLampEnabled;
             root.skipClockPage = GreeterState.skipClockPage;
             root.avatarShape = GreeterState.avatarShape;
@@ -61,6 +62,7 @@ Singleton {
     // Greeter-specific persisted settings
     property bool use12Hour: GreeterState.use12Hour
     property bool lavaLampEnabled: GreeterState.lavaLampEnabled
+    property bool wallpaperEnabled: GreeterState.wallpaperEnabled
     property bool skipClockPage: GreeterState.skipClockPage
     property int avatarShape: GreeterState.avatarShape
     property string avatarShapeName: GreeterState.avatarShapeName
@@ -74,6 +76,12 @@ Singleton {
         if (GreeterState.use12Hour !== use12Hour)
             GreeterState.use12Hour = use12Hour;
     }
+
+    onWallpaperEnabledChanged: {
+        if (GreeterState.wallpaperEnabled !== wallpaperEnabled)
+            GreeterState.wallpaperEnabled = wallpaperEnabled;
+    }
+
     onLavaLampEnabledChanged: {
         if (GreeterState.lavaLampEnabled !== lavaLampEnabled)
             GreeterState.lavaLampEnabled = lavaLampEnabled;

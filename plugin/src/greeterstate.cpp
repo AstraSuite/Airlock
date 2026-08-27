@@ -90,6 +90,7 @@ void GreeterState::setActiveUser(const QString &user)
     if (!m_activeUser.isEmpty()) {
         QJsonObject cur;
         cur[QStringLiteral("use12Hour")] = m_use12Hour;
+        cur[QStringLiteral("wallpaperEnabled")] = m_wallpaperEnabled;
         cur[QStringLiteral("avatarShape")] = m_avatarShape;
         cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
         cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
@@ -105,6 +106,7 @@ void GreeterState::setActiveUser(const QString &user)
     if (m_userSettings.contains(user)) {
         QJsonObject u = m_userSettings.value(user).toObject();
         if (u.contains(QStringLiteral("use12Hour"))) m_use12Hour = u.value(QStringLiteral("use12Hour")).toBool(m_use12Hour);
+        if (u.contains(QStringLiteral("wallpaperEnabled"))) m_wallpaperEnabled = u.value(QStringLiteral("wallpaperEnabled")).toBool(m_wallpaperEnabled);
         if (u.contains(QStringLiteral("avatarShape"))) m_avatarShape = u.value(QStringLiteral("avatarShape")).toInt(m_avatarShape);
         if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);
         if (u.contains(QStringLiteral("lavaLampEnabled"))) m_lavaLampEnabled = u.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
@@ -132,6 +134,7 @@ void GreeterState::setActiveUser(const QString &user)
 
     emit activeUserChanged();
     emit use12HourChanged();
+    emit wallpaperEnabledChanged();
     emit avatarShapeChanged();
     emit avatarShapeNameChanged();
     emit lavaLampEnabledChanged();
@@ -179,6 +182,12 @@ void GreeterState::loadFromDisk()
         m_use12Hour = s.value(QStringLiteral("use12h")).toBool(m_use12Hour);
     }
 
+    if (s.contains(QStringLiteral("wallpaperEnabled"))) {
+        m_wallpaperEnabled = s.value(QStringLiteral("wallpaperEnabled")).toBool(m_wallpaperEnabled);
+    } else if (s.contains(QStringLiteral("wallpaper"))) {
+        m_wallpaperEnabled = s.value(QStringLiteral("wallpaper")).toBool(m_wallpaperEnabled);
+    }
+
     if (s.contains(QStringLiteral("avatarShape"))) {
         m_avatarShape = s.value(QStringLiteral("avatarShape")).toInt(m_avatarShape);
     }
@@ -216,6 +225,7 @@ void GreeterState::loadFromDisk()
         if (u.contains(QStringLiteral("schemeName"))) m_schemeName = u.value(QStringLiteral("schemeName")).toString(m_schemeName);
         if (u.contains(QStringLiteral("schemeFlavour"))) m_schemeFlavour = u.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
         if (u.contains(QStringLiteral("schemeMode"))) m_schemeMode = u.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
+        if (u.contains(QStringLiteral("wallpaperEnabled"))) m_wallpaperEnabled = u.value(QStringLiteral("wallpaperEnabled")).toBool(m_wallpaperEnabled);
     }
 
     // Fallback if dynamic scheme is selected but active user has no dynamic scheme on disk
@@ -243,6 +253,7 @@ void GreeterState::save()
     if (!m_activeUser.isEmpty()) {
         QJsonObject cur;
         cur[QStringLiteral("use12Hour")] = m_use12Hour;
+        cur[QStringLiteral("wallpaperEnabled")] = m_wallpaperEnabled;
         cur[QStringLiteral("avatarShape")] = m_avatarShape;
         cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
         cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
@@ -270,6 +281,7 @@ void GreeterState::save()
     s[QStringLiteral("schemeName")] = m_schemeName;
     s[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
     s[QStringLiteral("schemeMode")] = m_schemeMode;
+    s[QStringLiteral("wallpaperEnabled")] = m_wallpaperEnabled;
 
     root[QStringLiteral("settings")] = s;
 
@@ -334,6 +346,14 @@ void GreeterState::setLavaLampEnabled(bool v)
     if (m_lavaLampEnabled == v) return;
     m_lavaLampEnabled = v;
     emit lavaLampEnabledChanged();
+    save();
+}
+
+void GreeterState::setWallpaperEnabled(bool v)
+{
+    if (m_wallpaperEnabled == v) return;
+    m_wallpaperEnabled = v;
+    emit wallpaperEnabledChanged();
     save();
 }
 
