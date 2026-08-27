@@ -20,6 +20,7 @@ class GreeterState : public QObject {
 
     Q_PROPERTY(QString activeUser READ activeUser WRITE setActiveUser NOTIFY activeUserChanged)
     Q_PROPERTY(bool use12Hour READ use12Hour WRITE setUse12Hour NOTIFY use12HourChanged)
+    Q_PROPERTY(bool wallpaperEnabled READ wallpaperEnabled WRITE setWallpaperEnabled NOTIFY wallpaperEnabledChanged)
     Q_PROPERTY(int avatarShape READ avatarShape WRITE setAvatarShape NOTIFY avatarShapeChanged)
     Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
     Q_PROPERTY(bool lavaLampEnabled READ lavaLampEnabled WRITE setLavaLampEnabled NOTIFY lavaLampEnabledChanged)

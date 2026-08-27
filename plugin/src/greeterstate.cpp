@@ -307,6 +307,7 @@ void GreeterState::reload()
 {
     loadFromDisk();
     emit use12HourChanged();
+    emit wallpaperEnabledChanged();
     emit avatarShapeChanged();
     emit avatarShapeNameChanged();
     emit lavaLampEnabledChanged();
