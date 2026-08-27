@@ -55,7 +55,7 @@ Rectangle {
         anchors.fill: parent
         source: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
-        visible: true
+        visible: root.enabled
         opacity: root.wallpaperEnabled ? 1 : 0
         scale: root.panelVisible ? 1 : 1.02
         property bool active: true
