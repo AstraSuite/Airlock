@@ -23,6 +23,7 @@ jobs:
             base-devel \
             git \
             cmake \
+            ninja \
             gcc \
             quickshell
 
