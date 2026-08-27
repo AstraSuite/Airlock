@@ -46,8 +46,48 @@ Rectangle {
         fillMode: Image.PreserveAspectCrop
         visible: true
         opacity: root.wallpaperEnabled ? 1 : 0
+        scale: root.panelVisible ? 1 : 1.02
+        property bool active: true
+        onSourceChanged: {
+            if (active) {
+                active = false;
+                Qt.callLater(() => { active = true; });
+            }
+        }
 
         Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blur: root.panelVisible ? 0.7 : 0
+            blurMax: 54
+            blurMultiplier: 1.0
+            Behavior on blur { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        }
+    }
+
+    Image {
+        id: wallpaperTop
+        anchors.fill: parent
+        source: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
+        fillMode: Image.PreserveAspectCrop
+        visible: true
+        opacity: root.wallpaperEnabled && !wallpaper.active ? 1 : 0
+        scale: root.panelVisible ? 1 : 1.02
+
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blur: root.panelVisible ? 0.7 : 0
+            blurMax: 54
+            blurMultiplier: 1.0
+            Behavior on blur { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+        }
     }
 
     // ── Background Layer (captured by BackdropBlur in modals) ────
