@@ -45,7 +45,7 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "A Quickshell frontend for greetd matching Caelestia M3 design";
     homepage = "https://github.com/AstraSuite/Airlock";
-    license = licenses.mit;
+    license = licenses.gpl3Only;
     platforms = platforms.linux;
   };
 }

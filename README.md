@@ -8,6 +8,20 @@ A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevin
 
 ---
 
+## Credits
+
+Airlock incorporates assets and components from **[Caelestia Shell](https://github.com/caelestia-dots/shell)**:
+
+- **M3Shapes QML module** — Material 3 shape definitions
+- **LoadingIndicator component** — Morphing loader animation
+- **Clock design** — Lockscreen clock styling
+- **FetchCard widget** — System information display
+- **Google Sans Flex font** — Typography asset
+
+Licensed under GPL v3. See [LICENSE](LICENSE) for details.
+
+---
+
 ## Screenshots
 <img width="1920" height="1080" alt="Airlock idle screen" src="https://github.com/user-attachments/assets/da58e7e2-d835-4dfe-8148-ba356efa8428" />
 <img width="1920" height="1080" alt="Airlock login screen" src="https://github.com/user-attachments/assets/f60e8994-931f-4ea1-8fef-b2fa32d041e3" />
