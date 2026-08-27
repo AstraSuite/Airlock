@@ -130,6 +130,11 @@ void GreeterState::setActiveUser(const QString &user)
         }
     }
 
+    if (m_lastUser != user) {
+        m_lastUser = user;
+        emit lastUserChanged();
+    }
+
     emit activeUserChanged();
     emit use12HourChanged();
     emit avatarShapeChanged();
@@ -206,8 +211,10 @@ void GreeterState::loadFromDisk()
         m_schemeMode = s.value(QStringLiteral("mode")).toString(m_schemeMode);
     }
 
-    if (!m_activeUser.isEmpty() && m_userSettings.contains(m_activeUser)) {
-        QJsonObject u = m_userSettings.value(m_activeUser).toObject();
+    // Load per-user settings: prefer activeUser, fall back to lastUser
+    const QString userForSettings = !m_activeUser.isEmpty() ? m_activeUser : m_lastUser;
+    if (!userForSettings.isEmpty() && m_userSettings.contains(userForSettings)) {
+        QJsonObject u = m_userSettings.value(userForSettings).toObject();
         if (u.contains(QStringLiteral("use12Hour"))) m_use12Hour = u.value(QStringLiteral("use12Hour")).toBool(m_use12Hour);
         if (u.contains(QStringLiteral("avatarShape"))) m_avatarShape = u.value(QStringLiteral("avatarShape")).toInt(m_avatarShape);
         if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);

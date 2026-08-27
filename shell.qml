@@ -9,12 +9,9 @@ import "modules"
 ShellRoot {
     id: root
 
-    // Load Google Sans Flex from the caelestia-shell asset path.
+    // Load Google Sans Flex from local assets
     FontLoader {
-        source: {
-            const shellPath = Quickshell.env("HOME") + "/.config/quickshell/caelestia/assets/google-sans-flex/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf";
-            return Qt.resolvedUrl("file://" + shellPath);
-        }
+        source: Qt.resolvedUrl("assets/fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf")
     }
 
     // Load Titan One font from local assets
