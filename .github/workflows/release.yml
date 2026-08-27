@@ -47,7 +47,7 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
 
-          cp -v build/bin/astra-airlock "astra-airlock-${tag}"
+          cp -v build/astra-airlock "astra-airlock-${tag}"
           git archive --format=tar.gz --prefix="astra-airlock-${version}/" -o "astra-airlock-${version}.tar.gz" "${tag}"
 
           echo "ARTIFACTS<<EOF" >> "$GITHUB_ENV"
