@@ -12,7 +12,7 @@
 }:
 stdenv.mkDerivation {
   pname = "astra-airlock";
-  version = "1.0.2";
+  version = "0-unstable-2025-01-15";
 
   src = ./..;
 
@@ -44,7 +44,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "A Quickshell frontend for greetd matching Caelestia M3 design";
-    homepage = "https://github.com/dim-ghub/Airlock";
+    homepage = "https://github.com/AstraSuite/Airlock";
     license = licenses.mit;
     platforms = platforms.linux;
   };
