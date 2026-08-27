@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed \
+            base-devel \
+            git \
+            cmake \
+            ninja \
+            gcc \
+            quickshell
+
+      - name: Mark git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Stage release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          cp -v build/astra-airlock "astra-airlock-${tag}"
+          git archive --format=tar.gz --prefix="astra-airlock-${version}/" -o "astra-airlock-${version}.tar.gz" "${tag}"
+
+          echo "ARTIFACTS<<EOF" >> "$GITHUB_ENV"
+          echo "astra-airlock-${tag}" >> "$GITHUB_ENV"
+          echo "astra-airlock-${version}.tar.gz" >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Airlock ${{ github.ref_name }}
+          files: ${{ env.ARTIFACTS }}
+          generate_release_notes: true

@@ -23,7 +23,15 @@ if(NOT ASTRA_AIRLOCK_VERSION)
 endif()
 
 if(NOT ASTRA_AIRLOCK_VERSION)
-    set(ASTRA_AIRLOCK_VERSION "0.0.0")
+    # Dev version: 0.YYYYMMDD (CMake requires numeric-only version components)
+    find_package(Git REQUIRED)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" log -1 --format=%cd --date=format:%Y%m%d
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        OUTPUT_VARIABLE git_date
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(ASTRA_AIRLOCK_VERSION "0.${git_date}")
 endif()
 
 project(astra-airlock VERSION ${ASTRA_AIRLOCK_VERSION} LANGUAGES CXX)
