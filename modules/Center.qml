@@ -276,6 +276,8 @@ Item {
                     source: root._user?.avatar || ""
                     fillMode: Image.PreserveAspectCrop
                     visible: status === Image.Ready
+                    mipmap: true
+                    smooth: true
 
                     layer.enabled: true
                     layer.effect: MultiEffect {
