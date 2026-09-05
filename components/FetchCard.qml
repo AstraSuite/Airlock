@@ -2,23 +2,26 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import "../services"
 
-// Lockscreen Fetch widget matching Caelestia's caelestiafetch.sh design
+// Lockscreen Fetch widget matching Caelestia modules/lock/Fetch.qml
 Rectangle {
     id: root
 
-    implicitWidth: 260
-    implicitHeight: 175
-    radius: 16
-    color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                   Colours.palette.m3surfaceContainer.g,
-                   Colours.palette.m3surfaceContainer.b, 0.85)
+    implicitHeight: 220
+    radius: 24
+    color: Colours.tPalette.m3surfaceContainer
+
+    readonly property string distroLogoPath: {
+        // Use user's installed distro icon
+        return "file:///usr/share/icons/artix/artixlinux-logo-only.svg";
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: 8
+        anchors.margins: 18
+        spacing: 12
 
         // Header Row: `> caelestiafetch.sh`
         RowLayout {
@@ -26,8 +29,8 @@ Rectangle {
             spacing: 8
 
             Rectangle {
-                implicitWidth: 20
-                implicitHeight: 20
+                implicitWidth: 22
+                implicitHeight: 22
                 radius: 6
                 color: Colours.palette.m3primary
 
@@ -44,100 +47,99 @@ Rectangle {
             Text {
                 text: "caelestiafetch.sh"
                 font.family: "Monospace"
-                font.pointSize: 10
+                font.pointSize: 12
                 font.weight: Font.Medium
                 color: Colours.palette.m3onSurface
                 Layout.fillWidth: true
             }
         }
 
-        // Body: Logo + Info Details
+        // Body: Distro Logo + Info Details
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            Layout.fillHeight: true
+            spacing: 18
 
-            // Distro / Caelestia Logo (Cyan modern triangular emblem)
+            // Distro Logo (Artix Linux SVG recolored to bright primary, matching Caelestia scale)
             Item {
-                implicitWidth: 54
-                implicitHeight: 54
+                implicitWidth: 104
+                implicitHeight: 104
+                Layout.preferredWidth: 104
+                Layout.preferredHeight: 104
+                Layout.alignment: Qt.AlignVCenter
 
-                Canvas {
+                Image {
+                    id: logoImg
                     anchors.fill: parent
-                    onPaint: {
-                        const ctx = getContext("2d");
-                        ctx.reset();
-                        ctx.fillStyle = Colours.palette.m3primary.toString();
-                        ctx.beginPath();
-                        ctx.moveTo(27, 4);
-                        ctx.lineTo(50, 48);
-                        ctx.lineTo(4, 48);
-                        ctx.closePath();
-                        ctx.fill();
+                    source: root.distroLogoPath
+                    fillMode: Image.PreserveAspectFit
+                    sourceSize.width: 256
+                    sourceSize.height: 256
+                    mipmap: true
+                    smooth: true
 
-                        // Inner geometric cut
-                        ctx.fillStyle = Colours.palette.m3surfaceContainer.toString();
-                        ctx.beginPath();
-                        ctx.moveTo(27, 20);
-                        ctx.lineTo(40, 44);
-                        ctx.lineTo(14, 44);
-                        ctx.closePath();
-                        ctx.fill();
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        brightness: 0.35
+                        contrast: 0.15
+                        colorization: 1.0
+                        colorizationColor: Colours.palette.m3primary
                     }
                 }
             }
 
-            // Specs
+            // Live System Specs in exact Caelestia monospace layout
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 3
 
                 Text {
-                    text: `OS   : ${SystemInfo.osName}`
+                    text: `OS  : ${SystemInfo.osPrettyName || SystemInfo.osName}`
                     font.family: "Monospace"
-                    font.pointSize: 9
+                    font.pointSize: 11
+                    font.weight: Font.Normal
                     color: Colours.palette.m3onSurface
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
                 Text {
-                    text: `WM   : ${SystemInfo.wmName}`
+                    text: `WM  : ${SystemInfo.wmName}`
                     font.family: "Monospace"
-                    font.pointSize: 9
+                    font.pointSize: 11
+                    font.weight: Font.Normal
                     color: Colours.palette.m3onSurface
                 }
                 Text {
-                    text: `USER : ${SystemInfo.userName}`
+                    text: `USER: ${SystemInfo.userName}`
                     font.family: "Monospace"
-                    font.pointSize: 9
+                    font.pointSize: 11
+                    font.weight: Font.Normal
                     color: Colours.palette.m3onSurface
                 }
                 Text {
-                    text: `UP   : ${SystemInfo.uptimeStr}`
+                    text: `UP  : ${SystemInfo.uptimeStr}`
                     font.family: "Monospace"
-                    font.pointSize: 9
+                    font.pointSize: 11
+                    font.weight: Font.Normal
                     color: Colours.palette.m3onSurface
                 }
             }
         }
 
-        // Color Palette Dots Row (8 dots)
+        // Terminal Color Palette Row (8 rounded squircle shapes, matching Caelestia)
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 6
-
-            property var paletteCols: [
-                "#333837", "#a7ceca", "#7aa2f7", "#fabd2f",
-                "#8ff2dc", "#b6e3fe", "#d0c0e2", "#ebbcba"
-            ]
+            spacing: 8
 
             Repeater {
-                model: parent.paletteCols
+                model: 8
+
                 Rectangle {
-                    required property var modelData
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    radius: 7
-                    color: modelData
+                    required property int index
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    radius: 8
+                    color: Colours.palette[`term${index}`] || "#9bd0cc"
                 }
             }
         }

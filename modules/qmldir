@@ -1,3 +1,4 @@
 module qs.airlock.modules
 Center 1.0 Center.qml
 GreeterSurface 1.0 GreeterSurface.qml
+LocklikePanel 1.0 LocklikePanel.qml

@@ -25,6 +25,7 @@ class GreeterState : public QObject {
     Q_PROPERTY(QString avatarShapeName READ avatarShapeName WRITE setAvatarShapeName NOTIFY avatarShapeNameChanged)
     Q_PROPERTY(bool lavaLampEnabled READ lavaLampEnabled WRITE setLavaLampEnabled NOTIFY lavaLampEnabledChanged)
     Q_PROPERTY(bool skipClockPage READ skipClockPage WRITE setSkipClockPage NOTIFY skipClockPageChanged)
+    Q_PROPERTY(bool locklikeEnabled READ locklikeEnabled WRITE setLocklikeEnabled NOTIFY locklikeEnabledChanged)
     Q_PROPERTY(QString lastUser READ lastUser WRITE setLastUser NOTIFY lastUserChanged)
     Q_PROPERTY(QString schemeName READ schemeName WRITE setSchemeName NOTIFY schemeNameChanged)
     Q_PROPERTY(QString schemeFlavour READ schemeFlavour WRITE setSchemeFlavour NOTIFY schemeFlavourChanged)
@@ -68,6 +69,9 @@ public:
     bool skipClockPage() const { return m_skipClockPage; }
     void setSkipClockPage(bool v);
 
+    bool locklikeEnabled() const { return m_locklikeEnabled; }
+    void setLocklikeEnabled(bool v);
+
     QString lastUser() const { return m_lastUser; }
     void setLastUser(const QString &v);
 
@@ -97,6 +101,7 @@ signals:
     void avatarShapeNameChanged();
     void lavaLampEnabledChanged();
     void skipClockPageChanged();
+    void locklikeEnabledChanged();
     void lastUserChanged();
     void schemeNameChanged();
     void schemeFlavourChanged();
@@ -113,6 +118,7 @@ private:
     QString m_avatarShapeName{QStringLiteral("Cookie 9-Sided")};
     bool m_lavaLampEnabled{true};
     bool m_skipClockPage{false};
+    bool m_locklikeEnabled{false};
     QString m_lastUser;
     QString m_schemeName{QStringLiteral("caelestia")};
     QString m_schemeFlavour{QStringLiteral("default")};

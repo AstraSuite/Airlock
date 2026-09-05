@@ -29,17 +29,6 @@ Item {
         radius: root.size / 2
         color: Colours.palette.m3surfaceContainerHighest
 
-        // Accent ring
-        Rectangle {
-            anchors.centerIn: parent
-            width: parent.width + 4
-            height: parent.height + 4
-            radius: (parent.width + 4) / 2
-            color: "transparent"
-            border.color: Qt.alpha(Colours.palette.m3primary, 0.6)
-            border.width: 2
-        }
-
         // User avatar image
         Image {
             id: avatarImage

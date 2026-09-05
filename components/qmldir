@@ -1,6 +1,7 @@
 module qs.airlock.components
 ActiveClock 1.0 ActiveClock.qml
 Anim 1.0 Anim.qml
+AnimatedLogo 1.0 AnimatedLogo.qml
 Avatar 1.0 Avatar.qml
 BatteryIcon 1.0 BatteryIcon.qml
 CAnim 1.0 CAnim.qml
@@ -10,10 +11,14 @@ IdleClock 1.0 IdleClock.qml
 InputField 1.0 InputField.qml
 LavaLamp 1.0 LavaLamp.qml
 LoadingIndicator 1.0 LoadingIndicator.qml
+LocklikeClock 1.0 LocklikeClock.qml
+LogoCard 1.0 LogoCard.qml
 MaterialIcon 1.0 MaterialIcon.qml
 MediaCard 1.0 MediaCard.qml
 PasswordInput 1.0 PasswordInput.qml
+OnScreenKeyboard 1.0 OnScreenKeyboard.qml
 PowerMenu 1.0 PowerMenu.qml
+QuickActionsCard 1.0 QuickActionsCard.qml
 ResourcesCard 1.0 ResourcesCard.qml
 SchemePickerModal 1.0 SchemePickerModal.qml
 SessionPicker 1.0 SessionPicker.qml
@@ -29,4 +34,5 @@ StateMessage 1.0 StateMessage.qml
 StateLayer 1.0 StateLayer.qml
 UserPickerModal 1.0 UserPickerModal.qml
 VerticalFadeListView 1.0 VerticalFadeListView.qml
+WavyTopRect 1.0 WavyTopRect.qml
 WeatherCard 1.0 WeatherCard.qml

@@ -4,58 +4,62 @@ import QtQuick
 import QtQuick.Layouts
 import "../services"
 
-// Lockscreen Weather widget matching Caelestia design
+// Lockscreen Weather widget matching Caelestia modules/lock/WeatherInfo.qml
 Rectangle {
     id: root
 
-    implicitWidth: 260
-    implicitHeight: 120
-    radius: 16
-    color: Qt.rgba(Colours.palette.m3surfaceContainer.r,
-                   Colours.palette.m3surfaceContainer.g,
-                   Colours.palette.m3surfaceContainer.b, 0.85)
+    implicitHeight: 185
+    radius: 28
+    color: Colours.tPalette.m3surfaceContainer
 
     ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 14
+        anchors.centerIn: parent
         spacing: 4
 
         Text {
             text: "Clear"
             font.family: "Google Sans Flex"
-            font.pointSize: 11
-            font.weight: Font.Medium
-            color: Colours.palette.m3outline
+            font.pointSize: 14
+            font.weight: Font.Normal
+            color: Colours.palette.m3onSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
         }
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+            spacing: 12
 
             Text {
                 text: "76°F"
                 font.family: "Google Sans Flex"
-                font.pointSize: 26
-                font.weight: Font.Bold
-                font.variableAxes: { "wdth": 85 }
-                color: Colours.palette.m3onSurface
+                font.pointSize: 44
+                font.weight: Font.DemiBold
+                font.variableAxes: { "wdth": 80, "opsz": 44 }
+                color: Colours.palette.m3primary
             }
 
             MaterialIcon {
                 text: "wb_sunny"
-                fontStyle.pointSize: 26
-                color: Colours.palette.m3primary
+                fontStyle.pointSize: 44
+                color: Colours.palette.m3secondary
             }
         }
 
         Text {
-            text: "Feels like 76°F\nHigh 82°F • Low 65°F"
+            text: "Feels like 76°F"
             font.family: "Google Sans Flex"
-            font.pointSize: 9
+            font.pointSize: 14
             font.weight: Font.Normal
-            horizontalAlignment: Text.AlignHCenter
-            color: Colours.palette.m3outline
+            color: Colours.palette.m3onSurfaceVariant
+            Layout.alignment: Qt.AlignHCenter
+        }
+
+        Text {
+            text: "High 82°F \u2022 Low 65°F"
+            font.family: "Google Sans Flex"
+            font.pointSize: 12
+            font.weight: Font.Normal
+            color: Colours.palette.m3onSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
         }
     }

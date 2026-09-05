@@ -54,9 +54,38 @@ Singleton {
             root.wallpaperEnabled = GreeterState.wallpaperEnabled;
             root.lavaLampEnabled = GreeterState.lavaLampEnabled;
             root.skipClockPage = GreeterState.skipClockPage;
+            root.locklikeEnabled = GreeterState.locklikeEnabled;
             root.avatarShape = GreeterState.avatarShape;
             root.avatarShapeName = GreeterState.avatarShapeName;
             root.reloadColours();
+        }
+    }
+
+    // Accessibility and Quick Actions state
+    property bool oskActive: false
+    property bool highContrast: false
+    property bool largeText: false
+    property bool touchAssist: false
+    property real fontScale: largeText ? 1.25 : 1.0
+
+    onHighContrastChanged: {
+        if (highContrast) {
+            root.palette.m3background = "#000000";
+            root.palette.m3surface = "#050707";
+            root.palette.m3surfaceContainerLowest = "#000000";
+            root.palette.m3surfaceContainerLow = "#0a0e0e";
+            root.palette.m3surfaceContainer = "#101616";
+            root.palette.m3surfaceContainerHigh = "#182222";
+            root.palette.m3surfaceContainerHighest = "#202c2c";
+            root.palette.m3onSurface = "#ffffff";
+            root.palette.m3onBackground = "#ffffff";
+            root.palette.m3outline = "#ffffff";
+            root.palette.m3primary = "#50e6ff";
+            root.palette.m3onPrimary = "#000000";
+            root.palette.m3secondary = "#70f5d5";
+            root.palette.m3onSecondary = "#000000";
+        } else {
+            reloadColours();
         }
     }
 
@@ -65,8 +94,14 @@ Singleton {
     property bool lavaLampEnabled: GreeterState.lavaLampEnabled
     property bool wallpaperEnabled: GreeterState.wallpaperEnabled
     property bool skipClockPage: GreeterState.skipClockPage
+    property bool locklikeEnabled: GreeterState.locklikeEnabled
     property int avatarShape: GreeterState.avatarShape
     property string avatarShapeName: GreeterState.avatarShapeName
+
+    onLocklikeEnabledChanged: {
+        if (GreeterState.locklikeEnabled !== locklikeEnabled)
+            GreeterState.locklikeEnabled = locklikeEnabled;
+    }
 
     onSkipClockPageChanged: {
         if (GreeterState.skipClockPage !== skipClockPage)
@@ -139,6 +174,24 @@ Singleton {
         property color m3onSuccess:               "#213528"; Behavior on m3onSuccess { CAnim {} }
         property color m3successContainer:        "#374B3E"; Behavior on m3successContainer { CAnim {} }
         property color m3onSuccessContainer:      "#D1E9D6"; Behavior on m3onSuccessContainer { CAnim {} }
+
+        // Terminal ANSI palette swatches matching Caelestia
+        property color term0: "#353434"; Behavior on term0 { CAnim {} }
+        property color term1: "#fa746f"; Behavior on term1 { CAnim {} }
+        property color term2: "#9bd0cc"; Behavior on term2 { CAnim {} }
+        property color term3: "#f5d082"; Behavior on term3 { CAnim {} }
+        property color term4: "#80ced7"; Behavior on term4 { CAnim {} }
+        property color term5: "#d5efff"; Behavior on term5 { CAnim {} }
+        property color term6: "#a9c5c2"; Behavior on term6 { CAnim {} }
+        property color term7: "#dce8e6"; Behavior on term7 { CAnim {} }
+        property color term8: "#b39e9e"; Behavior on term8 { CAnim {} }
+        property color term9: "#ff80a3"; Behavior on term9 { CAnim {} }
+        property color term10: "#ffd3d0"; Behavior on term10 { CAnim {} }
+        property color term11: "#fff1f0"; Behavior on term11 { CAnim {} }
+        property color term12: "#dcbc93"; Behavior on term12 { CAnim {} }
+        property color term13: "#f9a8c2"; Behavior on term13 { CAnim {} }
+        property color term14: "#ffd1c0"; Behavior on term14 { CAnim {} }
+        property color term15: "#ffffff"; Behavior on term15 { CAnim {} }
     }
 
     function _applyColoursMap(coloursMap) {
@@ -151,6 +204,8 @@ Singleton {
                 root.palette[direct] = "#" + hex;
             } else if (prop in root.palette || root.palette[prop] !== undefined) {
                 root.palette[prop] = "#" + hex;
+            } else if (name in root.palette || root.palette[name] !== undefined) {
+                root.palette[name] = "#" + hex;
             }
         }
     }

@@ -95,6 +95,7 @@ void GreeterState::setActiveUser(const QString &user)
         cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
         cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
         cur[QStringLiteral("skipClockPage")] = m_skipClockPage;
+        cur[QStringLiteral("locklikeEnabled")] = m_locklikeEnabled;
         cur[QStringLiteral("schemeName")] = m_schemeName;
         cur[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
         cur[QStringLiteral("schemeMode")] = m_schemeMode;
@@ -111,6 +112,11 @@ void GreeterState::setActiveUser(const QString &user)
         if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);
         if (u.contains(QStringLiteral("lavaLampEnabled"))) m_lavaLampEnabled = u.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
         if (u.contains(QStringLiteral("skipClockPage"))) m_skipClockPage = u.value(QStringLiteral("skipClockPage")).toBool(m_skipClockPage);
+        if (u.contains(QStringLiteral("locklikeEnabled"))) {
+            m_locklikeEnabled = u.value(QStringLiteral("locklikeEnabled")).toBool(m_locklikeEnabled);
+        } else if (u.contains(QStringLiteral("locklike"))) {
+            m_locklikeEnabled = u.value(QStringLiteral("locklike")).toBool(m_locklikeEnabled);
+        }
         if (u.contains(QStringLiteral("schemeName"))) m_schemeName = u.value(QStringLiteral("schemeName")).toString(m_schemeName);
         if (u.contains(QStringLiteral("schemeFlavour"))) m_schemeFlavour = u.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
         if (u.contains(QStringLiteral("schemeMode"))) m_schemeMode = u.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
@@ -144,6 +150,7 @@ void GreeterState::setActiveUser(const QString &user)
     emit avatarShapeNameChanged();
     emit lavaLampEnabledChanged();
     emit skipClockPageChanged();
+    emit locklikeEnabledChanged();
     emit schemeNameChanged();
     emit schemeFlavourChanged();
     emit schemeModeChanged();
@@ -205,6 +212,11 @@ void GreeterState::loadFromDisk()
     if (s.contains(QStringLiteral("skipClockPage"))) {
         m_skipClockPage = s.value(QStringLiteral("skipClockPage")).toBool(m_skipClockPage);
     }
+    if (s.contains(QStringLiteral("locklikeEnabled"))) {
+        m_locklikeEnabled = s.value(QStringLiteral("locklikeEnabled")).toBool(m_locklikeEnabled);
+    } else if (s.contains(QStringLiteral("locklike"))) {
+        m_locklikeEnabled = s.value(QStringLiteral("locklike")).toBool(m_locklikeEnabled);
+    }
 
     if (s.contains(QStringLiteral("schemeName"))) {
         m_schemeName = s.value(QStringLiteral("schemeName")).toString(m_schemeName);
@@ -229,6 +241,11 @@ void GreeterState::loadFromDisk()
         if (u.contains(QStringLiteral("avatarShapeName"))) m_avatarShapeName = u.value(QStringLiteral("avatarShapeName")).toString(m_avatarShapeName);
         if (u.contains(QStringLiteral("lavaLampEnabled"))) m_lavaLampEnabled = u.value(QStringLiteral("lavaLampEnabled")).toBool(m_lavaLampEnabled);
         if (u.contains(QStringLiteral("skipClockPage"))) m_skipClockPage = u.value(QStringLiteral("skipClockPage")).toBool(m_skipClockPage);
+        if (u.contains(QStringLiteral("locklikeEnabled"))) {
+            m_locklikeEnabled = u.value(QStringLiteral("locklikeEnabled")).toBool(m_locklikeEnabled);
+        } else if (u.contains(QStringLiteral("locklike"))) {
+            m_locklikeEnabled = u.value(QStringLiteral("locklike")).toBool(m_locklikeEnabled);
+        }
         if (u.contains(QStringLiteral("schemeName"))) m_schemeName = u.value(QStringLiteral("schemeName")).toString(m_schemeName);
         if (u.contains(QStringLiteral("schemeFlavour"))) m_schemeFlavour = u.value(QStringLiteral("schemeFlavour")).toString(m_schemeFlavour);
         if (u.contains(QStringLiteral("schemeMode"))) m_schemeMode = u.value(QStringLiteral("schemeMode")).toString(m_schemeMode);
@@ -265,6 +282,8 @@ void GreeterState::save()
         cur[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
         cur[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
         cur[QStringLiteral("skipClockPage")] = m_skipClockPage;
+        cur[QStringLiteral("locklikeEnabled")] = m_locklikeEnabled;
+        cur[QStringLiteral("locklike")] = m_locklikeEnabled;
         cur[QStringLiteral("schemeName")] = m_schemeName;
         cur[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
         cur[QStringLiteral("schemeMode")] = m_schemeMode;
@@ -285,6 +304,8 @@ void GreeterState::save()
     s[QStringLiteral("avatarShapeName")] = m_avatarShapeName;
     s[QStringLiteral("lavaLampEnabled")] = m_lavaLampEnabled;
     s[QStringLiteral("skipClockPage")] = m_skipClockPage;
+    s[QStringLiteral("locklikeEnabled")] = m_locklikeEnabled;
+    s[QStringLiteral("locklike")] = m_locklikeEnabled;
     s[QStringLiteral("schemeName")] = m_schemeName;
     s[QStringLiteral("schemeFlavour")] = m_schemeFlavour;
     s[QStringLiteral("schemeMode")] = m_schemeMode;
@@ -319,6 +340,7 @@ void GreeterState::reload()
     emit avatarShapeNameChanged();
     emit lavaLampEnabledChanged();
     emit skipClockPageChanged();
+    emit locklikeEnabledChanged();
     emit lastUserChanged();
     emit schemeNameChanged();
     emit schemeFlavourChanged();
@@ -370,6 +392,14 @@ void GreeterState::setSkipClockPage(bool v)
     if (m_skipClockPage == v) return;
     m_skipClockPage = v;
     emit skipClockPageChanged();
+    save();
+}
+
+void GreeterState::setLocklikeEnabled(bool v)
+{
+    if (m_locklikeEnabled == v) return;
+    m_locklikeEnabled = v;
+    emit locklikeEnabledChanged();
     save();
 }
 

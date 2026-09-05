@@ -687,7 +687,7 @@ Item {
                     }
                 }
 
-                // ── Row 5: Skip Clock Screen (Last in Appearance Group) ────
+                // ── Row 5: Skip Clock Screen (Middle in Appearance Group) ────
                 Rectangle {
                     id: rowSkipClock
                     Layout.fillWidth: true
@@ -695,8 +695,8 @@ Item {
                     radius: 4
                     topLeftRadius: 4
                     topRightRadius: 4
-                    bottomLeftRadius: 14
-                    bottomRightRadius: 14
+                    bottomLeftRadius: 4
+                    bottomRightRadius: 4
 
                     color: stateSkipClock.containsMouse
                         ? Colours.tPalette.m3surfaceContainerHighest
@@ -766,6 +766,92 @@ Item {
                                 text: Colours.skipClockPage ? "check" : "close"
                                 fontStyle.pointSize: 11
                                 color: Colours.skipClockPage
+                                    ? Colours.palette.m3primary
+                                    : Colours.palette.m3surfaceContainerHigh
+                            }
+                        }
+                    }
+                }
+
+                // ── Row 6: Locklike Layout (Last in Appearance Group) ────
+                Rectangle {
+                    id: rowLocklike
+                    Layout.fillWidth: true
+                    implicitHeight: 48
+                    radius: 4
+                    topLeftRadius: 4
+                    topRightRadius: 4
+                    bottomLeftRadius: 14
+                    bottomRightRadius: 14
+
+                    color: stateLocklike.containsMouse
+                        ? Colours.tPalette.m3surfaceContainerHighest
+                        : Colours.tPalette.m3surfaceContainerHigh
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    StateLayer {
+                        id: stateLocklike
+                        onClicked: Colours.locklikeEnabled = !Colours.locklikeEnabled
+                    }
+
+                    // Left Text Column
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.right: switchLocklike.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        Text {
+                            width: parent.width
+                            text: "Locklike layout"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 11
+                            font.weight: Font.Medium
+                            color: Colours.palette.m3onSurface
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: "Show full lockscreen widgets & dashboard"
+                            font.family: "Google Sans Flex"
+                            font.pointSize: 8
+                            color: Colours.palette.m3outline
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
+                    Rectangle {
+                        id: switchLocklike
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 42
+                        implicitHeight: 24
+                        radius: 12
+                        color: Colours.locklikeEnabled
+                            ? Colours.palette.m3primary
+                            : Colours.tPalette.m3surfaceContainerHighest
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Rectangle {
+                            id: thumbLocklike
+                            width: 18
+                            height: 18
+                            radius: 9
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: Colours.locklikeEnabled ? parent.width - width - 3 : 3
+                            color: Colours.locklikeEnabled ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: Colours.locklikeEnabled ? "check" : "close"
+                                fontStyle.pointSize: 11
+                                color: Colours.locklikeEnabled
                                     ? Colours.palette.m3primary
                                     : Colours.palette.m3surfaceContainerHigh
                             }
