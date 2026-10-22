@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <!-- Exported to banner.png; text uses Google Sans Flex. -->
+  <defs>
+    <radialGradient id="glow" cx="0.2" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#121A19"/>
+      <stop offset="1" stop-color="#0D1312"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#1A2221" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#1A2221" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <circle cx="1100" cy="100" r="80" fill="url(#orb)"/>
+  <circle cx="1150" cy="500" r="70" fill="url(#orb)"/>
+  <rect y="636" width="1280" height="4" fill="#435B59"/>
+
+  <!-- Icon card -->
+  <rect x="40.5" y="100.5" width="440" height="440" rx="48" fill="#101717" stroke="#1A1F1F"/>
+  <g transform="translate(68 128) scale(0.75)">
+    <!-- Hatch rim and bolts -->
+  <circle cx="256" cy="256" r="232" fill="#0B5A92"/>
+  <g fill="#0B3B60">
+    <circle cx="437.1" cy="331.0" r="13"/>
+    <circle cx="331.0" cy="437.1" r="13"/>
+    <circle cx="181.0" cy="437.1" r="13"/>
+    <circle cx="74.9" cy="331.0" r="13"/>
+    <circle cx="74.9" cy="181.0" r="13"/>
+    <circle cx="181.0" cy="74.9" r="13"/>
+    <circle cx="331.0" cy="74.9" r="13"/>
+    <circle cx="437.1" cy="181.0" r="13"/>
+  </g>
+  <!-- Porthole window with the user -->
+  <circle cx="256" cy="256" r="160" fill="#2B8CD6"/>
+  <circle cx="256" cy="215.8" r="33" fill="#FFE3D4"/>
+  <path d="M187.8 330.2a68.2 55 0 0 1 136.4 0Z" fill="#FFE3D4"/>
+  </g>
+
+  <!-- Text -->
+  <g font-family="Google Sans Flex, Google Sans, sans-serif">
+    <text x="560" y="175" font-size="14" letter-spacing="0.4" fill="#6A908D">ASTRA SUITE</text>
+    <rect x="560" y="183" width="41" height="3" rx="1.5" fill="#516E6C"/>
+    <text x="558" y="265" font-size="64" fill="#DDE6E5">Airlock</text>
+    <text x="560" y="308" font-size="28" fill="#87B6B2">Login Manager</text>
+    <text x="560" y="342" font-size="18" fill="#7D8787">Material 3 greeter for Wayland</text>
+    <rect x="560.5" y="374.5" width="168" height="29" rx="14.5" fill="none" stroke="#34403F"/>
+    <text x="574" y="394" font-size="13.5" fill="#7D8787">github.com/AstraSuite</text>
+  </g>
+</svg>
