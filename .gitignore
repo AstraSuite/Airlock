@@ -1,10 +1,2 @@
-build/
-bin/
-*.o
-*.a
-*.so
-CMakeCache.txt
-CMakeFiles/
-Makefile
-cmake_install.cmake
-install_manifest.txt
+target/
+.qmlls.ini
