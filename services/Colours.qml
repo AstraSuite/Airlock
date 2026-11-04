@@ -2,8 +2,6 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
-import Quickshell.Io
 import M3Shapes
 import Astra.Airlock
 import "../components"
@@ -11,7 +9,7 @@ import "../components"
 // Colours and theme state are managed directly via GreeterState and SchemeDiscovery.
 // Scheme, flavour, and mode are persisted directly in greeter.json.
 // All palette colours are loaded directly from system scheme files in 0ms without CLI subprocesses.
-Singleton {
+Item {
     id: root
 
     readonly property bool light: _mode === "light"
@@ -215,7 +213,7 @@ Singleton {
         if (root.schemeName === "dynamic") {
             targetFlavour = UserDiscovery.currentUser || root.flavour;
         }
-        const fastColours = SchemeDiscovery.getSchemeColours(root.schemeName, targetFlavour, root._mode);
+        const fastColours = JSON.parse(SchemeDiscovery.getSchemeColours(root.schemeName, targetFlavour, root._mode));
         if (fastColours && Object.keys(fastColours).length > 0) {
             _applyColoursMap(fastColours);
         }
@@ -243,7 +241,7 @@ Singleton {
             targetFlavour = UserDiscovery.currentUser || flavour;
         }
 
-        const fastColours = SchemeDiscovery.getSchemeColours(name, targetFlavour, root._mode);
+        const fastColours = JSON.parse(SchemeDiscovery.getSchemeColours(name, targetFlavour, root._mode));
         if (fastColours && Object.keys(fastColours).length > 0) {
             _applyColoursMap(fastColours);
         }

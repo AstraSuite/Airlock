@@ -14,8 +14,10 @@ Item {
     property int currentIndex: SessionDiscovery.defaultIndex
     signal sessionChanged(int index)
 
-    readonly property var currentSession: SessionDiscovery.sessions.length > 0 && currentIndex >= 0 && currentIndex < SessionDiscovery.sessions.length
-        ? SessionDiscovery.sessions[currentIndex] : null
+    readonly property var _sessionsList: JSON.parse(SessionDiscovery.sessionsJson)
+
+    readonly property var currentSession: root._sessionsList.length > 0 && currentIndex >= 0 && currentIndex < root._sessionsList.length
+        ? root._sessionsList[currentIndex] : null
 
     property bool menuOpen: false
 
@@ -47,10 +49,10 @@ Item {
             StateLayer {
                 id: leftStateLayer
                 onClicked: {
-                    if (SessionDiscovery.sessions.length > 1) {
-                        root.currentIndex = (root.currentIndex + 1) % SessionDiscovery.sessions.length;
+                    if (root._sessionsList.length > 1) {
+                        root.currentIndex = (root.currentIndex + 1) % root._sessionsList.length;
                         root.sessionChanged(root.currentIndex);
-                    } else if (SessionDiscovery.sessions.length === 1) {
+                    } else if (root._sessionsList.length === 1) {
                         root.menuOpen = !root.menuOpen;
                     }
                 }
@@ -159,7 +161,7 @@ Item {
             spacing: 4
 
             Repeater {
-                model: SessionDiscovery.sessions
+                model: root._sessionsList
                 delegate: Rectangle {
                     id: itemRow
                     required property int index

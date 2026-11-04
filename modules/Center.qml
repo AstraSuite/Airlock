@@ -4,8 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import M3Shapes
-import Quickshell
-import Quickshell.Services.Greetd
 import Astra.Airlock
 import "../services"
 import "../components"
@@ -25,10 +23,13 @@ Item {
     property int currentSessionIndex: SessionDiscovery.defaultIndex
     property int currentUserIndex: UserDiscovery.defaultIndex
 
-    readonly property var _user: UserDiscovery.users.length > 0 && currentUserIndex >= 0 && currentUserIndex < UserDiscovery.users.length
-        ? UserDiscovery.users[root.currentUserIndex] : null
-    readonly property var _session: SessionDiscovery.sessions.length > 0 && currentSessionIndex >= 0 && currentSessionIndex < SessionDiscovery.sessions.length
-        ? SessionDiscovery.sessions[root.currentSessionIndex] : null
+    readonly property var _usersList: JSON.parse(UserDiscovery.usersJson)
+    readonly property var _sessionsList: JSON.parse(SessionDiscovery.sessionsJson)
+
+    readonly property var _user: root._usersList.length > 0 && currentUserIndex >= 0 && currentUserIndex < root._usersList.length
+        ? root._usersList[root.currentUserIndex] : null
+    readonly property var _session: root._sessionsList.length > 0 && currentSessionIndex >= 0 && currentSessionIndex < root._sessionsList.length
+        ? root._sessionsList[root.currentSessionIndex] : null
 
     function syncUserSession() {
         if (root._user) {
@@ -361,7 +362,7 @@ Item {
                 currentIndex: root.currentSessionIndex
                 onSessionChanged: idx => {
                     root.currentSessionIndex = idx;
-                    const s = SessionDiscovery.sessions[idx];
+                    const s = root._sessionsList[idx];
                     if (s && root._user) {
                         GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
                     }
@@ -401,12 +402,12 @@ Item {
         z: 4000
         onUserSelected: idx => {
             root.currentUserIndex = idx;
-            const user = UserDiscovery.users[idx];
+            const user = root._usersList[idx];
             if (user) {
                 GreeterState.lastUser = user.username;
                 const sessIdx = SessionDiscovery.sessionIndexForUser(user.username);
                 root.currentSessionIndex = sessIdx;
-                const sess = SessionDiscovery.sessions[sessIdx];
+                const sess = root._sessionsList[sessIdx];
                 if (sess) {
                     GreeterState.saveSession(user.username, sess.key || sess.file || sess.name);
                 }

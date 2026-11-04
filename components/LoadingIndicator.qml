@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import M3Shapes
 import "../services"
 import "../components"
@@ -61,8 +60,12 @@ MaterialShape {
     color: Colours.palette.m3primary
     toShape: shapes[0]
 
-    ElapsedTimer {
+    // Minimal elapsed-time stopwatch (Quickshell's ElapsedTimer is gone).
+    QtObject {
         id: timer
+        property real _start: Date.now()
+        function elapsed(): real { return (Date.now() - _start) / 1000; }
+        function restart() { _start = Date.now(); }
     }
 
     FrameAnimation {

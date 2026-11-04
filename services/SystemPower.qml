@@ -1,10 +1,9 @@
 pragma Singleton
 
 import QtQuick
-import Quickshell
 import Astra.Airlock
 
-Singleton {
+Item {
     id: root
 
     readonly property bool canRebootToUefi: SessionManager.canRebootToUefi()

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import Astra.Airlock
 import "../services"
 
 // Lockscreen Fetch widget matching Caelestia modules/lock/Fetch.qml
