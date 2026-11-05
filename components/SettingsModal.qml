@@ -4,10 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
-import Quickshell.Services.Greetd
-import Caelestia.Blobs
 import Astra.Airlock
 import M3Shapes
 import "../services"
