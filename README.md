@@ -4,19 +4,30 @@
 
 <h1 align="center">Airlock</h1>
 
-A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**, crafted with **[Quickshell](https://quickshell.outfoxxed.me/)** and Qt6 to seamlessly match Caelestia's **[shell](https://github.com/caelestia-dots/shell)**.
+A modern, fluid Material 3 frontend for **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**, written in **Rust** on **Qt6** (via [cxx-qt](https://github.com/KDAB/cxx-qt)) to seamlessly match Caelestia's **[shell](https://github.com/caelestia-dots/shell)**. Ships as a single self-contained binary with the whole UI baked in — no Quickshell, no QML files on disk.
+
+Airlock also reads [KiiteShell](https://github.com/Kiite-Org/KiiteShell)'s generated Material You palette as an additional `"kiite"` colour scheme, alongside Caelestia's own schemes and the per-user "dynamic" sync.
 
 ---
 
 ## Credits
 
-Airlock incorporates assets and components from **[Caelestia Shell](https://github.com/caelestia-dots/shell)**:
+Airlock incorporates assets, components, and (now vendored, see
+[native/blobs/NOTICE.md](native/blobs/NOTICE.md)) native code from
+**[Caelestia Shell](https://github.com/caelestia-dots/shell)**:
 
-- **M3Shapes QML module** — Material 3 shape definitions
+- **Blobs metaball renderer** (`BlobGroup`/`BlobRect`) — vendored C++ source,
+  compiled directly into this binary; caelestia-shell itself is no longer
+  required
 - **LoadingIndicator component** — Morphing loader animation
 - **Clock design** — Lockscreen clock styling
 - **FetchCard widget** — System information display
 - **Google Sans Flex font** — Typography asset
+
+The Material 3 shape language (`M3Shapes`) comes from the standalone
+[qt6-m3shapes](https://aur.archlinux.org/packages/qt6-m3shapes-git) QML
+module instead — a dependency extracted from caelestia-shell, not the whole
+shell package.
 
 Licensed under GPL v3. See [LICENSE](LICENSE) for details.
 
@@ -32,17 +43,17 @@ Licensed under GPL v3. See [LICENSE](LICENSE) for details.
 
 **Runtime:**
 - **[greetd](https://git.sr.ht/~kennylevinsen/greetd)**
-- **[Quickshell](https://quickshell.outfoxxed.me/)** >= 0.3.0
-- **Qt 6.6+** (Core, DBus, Qml, Quick, Quick3D)
-- **M3Shapes QML module** — Provided by [caelestia-shell](https://github.com/caelestia-dots/shell) (or `caelestia-shell-git`/`dim-caelestia-shell-git`)
+- **Qt 6.6+** (Core, DBus, Qml, Quick)
+- **M3Shapes QML module** — Provided by [qt6-m3shapes-git](https://aur.archlinux.org/packages/qt6-m3shapes-git) (AUR); caelestia-shell itself is **not** a dependency any more
 - **A wayland compositor** — Example configurations are supplied for use with [Hyprland](https://github.com/hyprwm/hyprland) and [Cage](https://github.com/cage-kiosk/cage)
 
 **Build:**
-- **CMake** >= 3.19
-- **Ninja**
+- **Rust** (stable toolchain) and **Cargo**
+- **Qt 6.6+ dev packages** (`qmake6` on `PATH`, or `QMAKE` set)
 
 **Optional:**
 - **[caelestia-cli](https://github.com/caelestia-dots/cli)** (or `caelestia-cli-git` / `dim-caelestia-cli-git`) — Required to use `--sync` (provides the Caelestia scheme)
+- **[KiiteShell](https://github.com/Kiite-Org/KiiteShell)** — if present, its generated palette (`~/.local/state/kiite/user/generated/colors.json`) shows up automatically as the `"kiite"` scheme
 - **[wlr-randr](https://gitlab.freedesktop.org/emersion/wlr-randr)** — Only necessary if using the monitor flags
 
 ---
@@ -64,51 +75,20 @@ paru -S astra-airlock
 paru -S astra-airlock-git
 ```
 
-If using a manual install or a fork of the Caelestia shell and or cli, you can create and install a fake package to satisfy the dependencies:
-```sh
-mkdir -p /tmp/dummy-caelestia && cd /tmp/dummy-caelestia
-nano PKGBUILD
-```
-
-Paste in these contents:
-```
-pkgname=dummy-caelestia
-pkgver=1.0.0
-pkgrel=1
-pkgdesc="Dummy metapackage to satisfy caelestia dependencies"
-arch=('any')
-provides=('caelestia-shell' 'caelestia-cli')
-conflicts=('caelestia-shell' 'caelestia-cli')
-
-package() {
-    true
-}
-```
-
-Then install the dummy package:
-```sh
-makepkg -si
-```
-
-### Manual Installation (CMake)
+### Manual Installation (Cargo)
 
 ```sh
 # Clone and enter directory
 git clone https://github.com/AstraSuite/Airlock.git astra-airlock
 cd astra-airlock
 
-# Configure and compile C++ QML plugin
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+# Build the single self-contained binary (QML, fonts, and the Rust
+# backend are all compiled into it — nothing else needs installing)
+cargo build --release
 
-# Install QML module, configuration, and launcher
-sudo cmake --install build
+# Install it
+sudo install -Dm755 target/release/astra-airlock /usr/bin/astra-airlock
 ```
-
-This installs:
-- The `Astra.Airlock` QML plugin under the system Qt6 QML module directory (typically `/usr/lib/qt6/qml/Astra/Airlock/`)
-- The launcher binary to `/usr/bin/astra-airlock`
-- The shell configuration to `/etc/xdg/quickshell/astra-airlock/`
 
 ### Nix / NixOS Installation
 
@@ -361,9 +341,8 @@ Supported options: `--only`, `--output NAME`, `--on`, `--off`,
 `--transform`, `--scale`, `--adaptive-sync`.
 
 The options are applied to the running compositor via the
-`wlr-output-management` protocol before Quickshell starts; all other
-arguments are passed through to Quickshell. Run `astra-airlock --help`
-for the full list.
+`wlr-output-management` protocol before the greeter's own window opens.
+Run `astra-airlock --help` for the full list.
 
 #### Converting an Existing Hyprland Monitor Configuration
 
@@ -464,12 +443,7 @@ sudo systemctl enable --now greetd.service
 You can test and iterate on the greeter locally without logging out:
 
 ```sh
-# Build plugin
-cmake -B build -G Ninja
-cmake --build build
-
-# Launch Quickshell with local build plugin path
-QML2_IMPORT_PATH=./build/qml quickshell -p .
+cargo run
 ```
 
-When run outside greetd, authentication is safely simulated in test mode.
+When run outside greetd (no `$GREETD_SOCK`), authentication is safely simulated in test mode. Because the QML tree is baked into the binary at build time, re-run `cargo run` after editing any `.qml` file to see the change.
