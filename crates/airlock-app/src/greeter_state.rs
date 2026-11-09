@@ -132,12 +132,29 @@ fn dirs_home() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("/"))
 }
 
+/// Whether *this process* (not just the file's owner) can actually write
+/// into `dir`. `Permissions::readonly()` only reflects the owner's write
+/// bit, which says nothing about our own effective access (e.g. a
+/// root-owned, mode-755 directory reports "writable" even though a
+/// non-root process like the `greeter` user plainly cannot write into
+/// it) — so this probes with a real, immediately-removed temp file instead.
+fn dir_is_writable(dir: &std::path::Path) -> bool {
+    let probe = dir.join(format!(".airlock-write-test-{}", std::process::id()));
+    match fs::File::create(&probe) {
+        Ok(_) => {
+            let _ = fs::remove_file(&probe);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
 fn compute_state_file_path() -> PathBuf {
     // 1. An existing, writable file.
     for p in candidate_paths() {
         if p.exists() {
-            if let Ok(meta) = fs::metadata(&p) {
-                if !meta.permissions().readonly() {
+            if let Some(dir) = p.parent() {
+                if dir_is_writable(dir) {
                     return p;
                 }
             }
@@ -147,10 +164,10 @@ fn compute_state_file_path() -> PathBuf {
     for p in candidate_paths() {
         if let Some(dir) = p.parent() {
             if dir.exists() {
-                if fs::metadata(dir).map(|m| !m.permissions().readonly()).unwrap_or(false) {
+                if dir_is_writable(dir) {
                     return p;
                 }
-            } else if fs::create_dir_all(dir).is_ok() {
+            } else if fs::create_dir_all(dir).is_ok() && dir_is_writable(dir) {
                 return p;
             }
         }
@@ -329,7 +346,9 @@ impl ffi::GreeterState {
             let _ = fs::create_dir_all(dir);
         }
         if let Ok(text) = serde_json::to_string_pretty(&root) {
-            let _ = fs::write(&path, text);
+            if let Err(e) = fs::write(&path, text) {
+                eprintln!("[astra-airlock] failed to save settings to {}: {e}", path.display());
+            }
         }
     }
 
