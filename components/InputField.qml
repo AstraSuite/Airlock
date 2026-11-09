@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import M3Shapes
 import "../services"
 import "../components"
@@ -110,9 +109,7 @@ Item {
             NumberAnimation { duration: 120 }
         }
 
-        model: ScriptModel {
-            values: root.buffer.split("")
-        }
+        model: root.buffer.split("")
 
         delegate: CharItem {}
 

@@ -1,9 +1,8 @@
 pragma Singleton
 
 import QtQuick
-import Quickshell
 
-Singleton {
+Item {
     id: root
 
     // Path to optional custom wallpaper image in greeter cache or system backgrounds

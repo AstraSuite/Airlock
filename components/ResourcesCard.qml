@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import M3Shapes
+import Astra.Airlock
 import "../services"
 
 // Lockscreen Resources widget matching Caelestia modules/lock/Resources.qml

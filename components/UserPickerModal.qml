@@ -108,7 +108,7 @@ Item {
                 Layout.fillHeight: true
                 clip: true
                 spacing: 6
-                model: UserDiscovery.users
+                model: JSON.parse(UserDiscovery.usersJson)
                 fadeAmount: 0.12
 
                 delegate: Rectangle {

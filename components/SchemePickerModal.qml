@@ -3,9 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
-import Caelestia.Blobs
 import Astra.Airlock
 import "../services"
 
@@ -26,7 +23,7 @@ Item {
     readonly property string currentFlavour: Colours.flavour
 
     // Raw list of schemes from SchemeDiscovery C++ plugin
-    property var allSchemes: SchemeDiscovery.schemes
+    property var allSchemes: JSON.parse(SchemeDiscovery.schemesJson)
 
     // Filtered schemes based on search text
     readonly property var filteredSchemes: {

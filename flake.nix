@@ -1,13 +1,8 @@
 {
-  description = "A clean M3 Quickshell frontend for greetd";
+  description = "A clean M3 Rust/Qt6 frontend for greetd";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    quickshell = {
-      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     m3shapes = {
       url = "github:soramanew/m3shapes/bdc327b29f95394a732baf3c9b19658ba23755b6";
@@ -30,7 +25,6 @@
     packages = forAllSystems (pkgs: rec {
       astra-airlock = pkgs.callPackage ./nix {
         inherit (inputs) m3shapes;
-        quickshell = inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default;
       };
       default = astra-airlock;
     });
@@ -38,12 +32,12 @@
     devShells = forAllSystems (pkgs: {
       default = pkgs.mkShell {
         packages = with pkgs; [
-          cmake
-          ninja
+          cargo
+          rustc
           pkg-config
           qt6.qtbase
           qt6.qtdeclarative
-          qt6.qtquick3d
+          qt6.qtshadertools
           cage
           greetd.greetd
         ];

@@ -2,8 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
-import Quickshell
-import Quickshell.Services.Greetd
 import Astra.Airlock
 import "../services"
 import "../components"
@@ -39,7 +37,7 @@ Rectangle {
         root.exitRequested();
     }
 
-    property string imageSource: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
+    property string imageSource: "file:///var/cache/astra-airlock/wallpapers/" + Colours.currentUser
     onImageSourceChanged: {
         if (wallpaper.active) {
             wallpaper.active = false;
@@ -53,7 +51,7 @@ Rectangle {
     Image {
         id: wallpaper
         anchors.fill: parent
-        source: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
+        source: "file:///var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
         visible: root.enabled
         opacity: root.wallpaperEnabled ? 1 : 0
@@ -76,7 +74,7 @@ Rectangle {
     Image {
         id: wallpaperTop
         anchors.fill: parent
-        source: "/var/cache/astra-airlock/wallpapers/" + Colours.currentUser
+        source: "file:///var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
         visible: true
         opacity: root.wallpaperEnabled && !wallpaper.active ? 1 : 0
