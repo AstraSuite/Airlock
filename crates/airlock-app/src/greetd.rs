@@ -55,11 +55,14 @@ pub mod ffi {
         #[qobject]
         #[qml_element]
         #[qml_singleton]
-        #[qproperty(i32, inactive, READ, CONSTANT)]
-        #[qproperty(i32, authenticating, READ, CONSTANT)]
-        #[qproperty(i32, ready_to_launch, READ, CONSTANT, cxx_name = "readyToLaunch")]
-        #[qproperty(i32, launching, READ, CONSTANT)]
-        #[qproperty(i32, launched, READ, CONSTANT)]
+        // cxx_name is PascalCase to match Qt enum-value convention: QML
+        // compares against `GreetdState.Authenticating` etc, not the
+        // lowercase property name camelCase would otherwise produce.
+        #[qproperty(i32, inactive, READ, CONSTANT, cxx_name = "Inactive")]
+        #[qproperty(i32, authenticating, READ, CONSTANT, cxx_name = "Authenticating")]
+        #[qproperty(i32, ready_to_launch, READ, CONSTANT, cxx_name = "ReadyToLaunch")]
+        #[qproperty(i32, launching, READ, CONSTANT, cxx_name = "Launching")]
+        #[qproperty(i32, launched, READ, CONSTANT, cxx_name = "Launched")]
         type GreetdState = super::GreetdStateRust;
     }
 }
