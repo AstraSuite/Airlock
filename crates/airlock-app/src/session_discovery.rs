@@ -158,9 +158,46 @@ fn sessions_to_json(sessions: &[SessionEntry]) -> QString {
     QString::from(serde_json::to_string(&arr).unwrap_or_else(|_| "[]".to_string()).as_str())
 }
 
+/// The same candidate paths GreeterState checks for its own settings file
+/// (kept in sync manually since they're separate cxx-qt QObjects with no
+/// direct reference to each other).
+fn greeter_state_file_candidates() -> Vec<std::path::PathBuf> {
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from).unwrap_or_else(|| std::path::PathBuf::from("/"));
+    vec![
+        std::path::PathBuf::from("/var/cache/astra-airlock/greeter.json"),
+        std::path::PathBuf::from("/var/lib/astra-airlock/greeter.json"),
+        home.join(".config/caelestia/greeter.json"),
+        home.join(".cache/astra-airlock/greeter.json"),
+        std::env::temp_dir().join("astra-airlock.json"),
+    ]
+}
+
+/// Airlock's own remembered last session for `user` (saved via
+/// `GreeterState.saveSession`), checked before the AccountsService fallback
+/// below — matches the original C++ GreeterState::getLastSession, which
+/// checked its own `userSessions` map first and AccountsService second.
+fn saved_session_for_user(user: &str) -> Option<String> {
+    if user.is_empty() {
+        return None;
+    }
+    for path in greeter_state_file_candidates() {
+        let Ok(text) = fs::read_to_string(&path) else { continue };
+        let Ok(doc) = serde_json::from_str::<serde_json::Value>(&text) else { continue };
+        if let Some(sess) = doc.get("userSessions").and_then(|m| m.get(user)).and_then(|v| v.as_str()) {
+            if !sess.is_empty() {
+                return Some(sess.to_string());
+            }
+        }
+    }
+    None
+}
+
 fn last_session_for_user(user: &str) -> String {
     if user.is_empty() {
         return String::new();
+    }
+    if let Some(saved) = saved_session_for_user(user) {
+        return saved;
     }
     let acc_path = format!("/var/lib/AccountsService/users/{user}");
     if let Ok(text) = fs::read_to_string(&acc_path) {
