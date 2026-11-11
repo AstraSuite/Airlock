@@ -22,10 +22,10 @@ jobs:
           pacman -S --noconfirm --needed \
             base-devel \
             git \
-            cmake \
-            ninja \
-            gcc \
-            quickshell
+            rust \
+            qt6-base \
+            qt6-declarative \
+            qt6-shadertools
 
       - name: Mark git safe directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -34,11 +34,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-
       - name: Build
-        run: cmake --build build
+        run: cargo build --release --locked
 
       - name: Stage release artifacts
         shell: bash
@@ -47,7 +44,7 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
 
-          cp -v build/astra-airlock "astra-airlock-${tag}"
+          cp -v target/release/astra-airlock "astra-airlock-${tag}"
           git archive --format=tar.gz --prefix="astra-airlock-${version}/" -o "astra-airlock-${version}.tar.gz" "${tag}"
 
           echo "ARTIFACTS<<EOF" >> "$GITHUB_ENV"

@@ -410,7 +410,7 @@ fn convert_file(path: &str) -> i32 {
 }
 
 fn print_version() {
-    println!("astra-airlock {}", env!("CARGO_PKG_VERSION"));
+    println!("astra-airlock {}", env!("AIRLOCK_VERSION"));
 
     let greetd_ver = Command::new("sh")
         .arg("-c")

@@ -112,11 +112,43 @@ fn generate_qrc(repo_root: &Path, out_dir: &Path, baked_shaders: &[(String, Path
     qrc_path
 }
 
+/// Version from the latest `vX.Y.Z` tag, else the commit date as 0.YYYYMMDD.
+/// `AIRLOCK_VERSION` overrides both, for builds from a tarball with no `.git`
+/// (e.g. the AUR package sets it to `$pkgver`).
+fn airlock_version() -> String {
+    if let Ok(v) = std::env::var("AIRLOCK_VERSION") {
+        if !v.is_empty() {
+            return v;
+        }
+    }
+    let git = |args: &[&str]| {
+        Command::new("git")
+            .args(args)
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+            .filter(|s| !s.is_empty())
+    };
+    if let Some(tag) = git(&["describe", "--tags", "--match", "v[0-9]*", "--abbrev=0", "HEAD"]) {
+        return tag.trim_start_matches('v').to_string();
+    }
+    if let Some(date) = git(&["log", "-1", "--format=%cd", "--date=format:%Y%m%d"]) {
+        return format!("0.{date}");
+    }
+    std::env::var("CARGO_PKG_VERSION").unwrap()
+}
+
 fn main() {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     // crates/airlock-app -> repo root
     let repo_root = manifest_dir.parent().unwrap().parent().unwrap().to_path_buf();
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+
+    println!("cargo:rustc-env=AIRLOCK_VERSION={}", airlock_version());
+    println!("cargo:rerun-if-env-changed=AIRLOCK_VERSION");
+    println!("cargo:rerun-if-changed={}", repo_root.join(".git/HEAD").display());
+    println!("cargo:rerun-if-changed={}", repo_root.join(".git/refs/tags").display());
 
     let baked_shaders = bake_blob_shaders(&repo_root, &out_dir);
     let qrc_path = generate_qrc(&repo_root, &out_dir, &baked_shaders);
