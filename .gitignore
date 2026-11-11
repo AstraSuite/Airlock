@@ -1,2 +1,9 @@
 target/
 .qmlls.ini
+
+# makepkg leftovers in packaging/
+packaging/*/src/
+packaging/*/pkg/
+packaging/*/Airlock/
+packaging/*/*.pkg.tar.*
+packaging/*/*.tar.gz
