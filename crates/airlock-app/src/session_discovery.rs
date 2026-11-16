@@ -283,6 +283,20 @@ impl ffi::SessionDiscovery {
 
     pub fn reload(mut self: Pin<&mut Self>) {
         let mut sessions = Vec::new();
+
+        // Check standard XDG_DATA_DIRS
+        if let Ok(dirs) = std::env::var("XDG_DATA_DIRS") {
+            for dir in dirs.split(':').filter(|s| !s.is_empty()) {
+                parse_directory(&format!("{dir}/wayland-sessions"), "Wayland", &mut sessions);
+                parse_directory(&format!("{dir}/xsessions"), "X11", &mut sessions);
+            }
+        }
+
+        // NixOS system profile fallback
+        parse_directory("/run/current-system/sw/share/wayland-sessions", "Wayland", &mut sessions);
+        parse_directory("/run/current-system/sw/share/xsessions", "X11", &mut sessions);
+
+        // FHS fallback
         parse_directory("/usr/share/wayland-sessions", "Wayland", &mut sessions);
         parse_directory("/usr/share/xsessions", "X11", &mut sessions);
 
@@ -319,9 +333,13 @@ impl ffi::SessionDiscovery {
         }
 
         if target < 0 {
+            let mut hypr_uwsm_idx = -1i32;
             let mut hypr_idx = -1i32;
             let mut wayland_idx = -1i32;
             for (i, s) in self.sessions.iter().enumerate() {
+                if s.key == "hyprland-uwsm" && hypr_uwsm_idx == -1 {
+                    hypr_uwsm_idx = i as i32;
+                }
                 if s.key.contains("hyprland") && hypr_idx == -1 {
                     hypr_idx = i as i32;
                 }
@@ -329,7 +347,7 @@ impl ffi::SessionDiscovery {
                     wayland_idx = i as i32;
                 }
             }
-            target = if hypr_idx != -1 { hypr_idx } else if wayland_idx != -1 { wayland_idx } else { 0 };
+            target = if hypr_uwsm_idx != -1 { hypr_uwsm_idx } else if hypr_idx != -1 { hypr_idx } else if wayland_idx != -1 { wayland_idx } else { 0 };
         }
 
         if self.default_index != target {
