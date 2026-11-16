@@ -86,6 +86,7 @@ fn generate_qrc(repo_root: &Path, out_dir: &Path, baked_shaders: &[(String, Path
     for font in [
         "assets/fonts/GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf",
         "assets/fonts/TitanOne-Regular.ttf",
+        "assets/fonts/MaterialSymbolsRounded.ttf",
     ] {
         if repo_root.join(font).is_file() {
             files.push(font.to_string());

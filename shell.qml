@@ -24,6 +24,11 @@ Window {
         source: Qt.resolvedUrl("assets/fonts/TitanOne-Regular.ttf")
     }
 
+    // Load Material Symbols Rounded font from assets
+    FontLoader {
+        source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf")
+    }
+
     GreeterSurface {
         anchors.fill: parent
         onExitRequested: Qt.quit()
