@@ -8,15 +8,11 @@
   qt6,
   m3shapes,
   wlr-randr,
+  symlinkJoin,
+  writeShellScriptBin,
+  material-symbols,
 }:
 let
-  # M3Shapes is a small standalone QML plugin (Astra Airlock no longer
-  # vendors or links against caelestia-shell at all; see
-  # native/blobs/NOTICE.md for the parts that *are* vendored). Built the
-  # same way Airlock's own QML module used to be, from the `m3shapes` flake
-  # input's source. This isn't verified against m3shapes's actual
-  # CMakeLists.txt (no Nix available in the environment this was written
-  # in to build-test it) — if its install layout differs, adjust here.
   m3shapesQml = stdenv.mkDerivation {
     pname = "m3shapes-qml";
     version = "unstable";
@@ -32,11 +28,37 @@ let
       qt6.qtbase
       qt6.qtdeclarative
     ];
+    cmakeFlags = [
+      "-DINSTALL_QMLDIR=lib/qt6/qml"
+    ];
   };
+
+  qtCombined = symlinkJoin {
+    name = "qt6-combined";
+    paths = [
+      qt6.qtbase
+      qt6.qtdeclarative
+      qt6.qtshadertools
+    ];
+  };
+
+  qmakeWrapper = writeShellScriptBin "qmake" ''
+    if [ "$1" = "-query" ]; then
+      case "$2" in
+        QT_INSTALL_LIBS|QT_HOST_LIBS) echo "${qtCombined}/lib"; exit 0 ;;
+        QT_INSTALL_HEADERS|QT_HOST_HEADERS) echo "${qtCombined}/include"; exit 0 ;;
+        QT_INSTALL_PREFIX|QT_HOST_PREFIX) echo "${qtCombined}"; exit 0 ;;
+        QT_INSTALL_PLUGINS|QT_HOST_PLUGINS) echo "${qtCombined}/lib/qt-6/plugins"; exit 0 ;;
+        QT_INSTALL_LIBEXECS|QT_HOST_LIBEXECS|QT_INSTALL_LIBEXECS/get|QT_HOST_LIBEXECS/get) echo "${qtCombined}/libexec"; exit 0 ;;
+        QT_INSTALL_BINS|QT_HOST_BINS|QT_INSTALL_BINS/get|QT_HOST_BINS/get) echo "${qtCombined}/bin"; exit 0 ;;
+      esac
+    fi
+    exec ${qt6.qtbase}/bin/qmake "$@"
+  '';
 in
 rustPlatform.buildRustPackage {
   pname = "astra-airlock";
-  version = "0-unstable-2025-01-15";
+  version = "2.1.0";
 
   src = ./..;
 
@@ -46,22 +68,39 @@ rustPlatform.buildRustPackage {
 
   nativeBuildInputs = [
     pkg-config
-    qt6.qtshadertools # provides `qsb`, used to bake the vendored Blobs shaders
+    qt6.qtshadertools
     qt6.wrapQtAppsHook
   ];
 
   buildInputs = [
     qt6.qtbase
     qt6.qtdeclarative
+    qt6.qtshadertools
   ];
 
-  # cxx-qt-build needs `qmake` on PATH to find Qt.
-  QMAKE = "${qt6.qtbase}/bin/qmake";
+  preBuild = ''
+    mkdir -p .qmake-bin
+    ln -sf "${qmakeWrapper}/bin/qmake" .qmake-bin/qmake
+    ln -sf "${qmakeWrapper}/bin/qmake" .qmake-bin/qmake6
+    export PATH="$(pwd)/.qmake-bin:$PATH"
+    export QMAKE="$(pwd)/.qmake-bin/qmake"
+    export QT_INSTALL_LIBS="${qtCombined}/lib"
+    export QT_INSTALL_HEADERS="${qtCombined}/include"
+    export QT_INSTALL_PREFIX="${qtCombined}"
+    export QT_HOST_LIBEXECS="${qtCombined}/libexec"
+    export QT_INSTALL_LIBEXECS="${qtCombined}/libexec"
+  '';
+
+  postPatch = ''
+    cp "${material-symbols}/share/fonts/truetype/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf" \
+      assets/fonts/MaterialSymbolsRounded.ttf
+  '';
 
   postFixup = ''
     wrapProgram $out/bin/astra-airlock \
       --prefix PATH : ${lib.makeBinPath [ wlr-randr ]} \
-      --prefix QML2_IMPORT_PATH : "${m3shapesQml}/lib/qt6/qml"
+      --prefix QML2_IMPORT_PATH : "${m3shapesQml}/lib/qt6/qml" \
+      --prefix LD_LIBRARY_PATH : "${m3shapesQml}/lib/qt6/qml/M3Shapes"
   '';
 
   meta = with lib; {
