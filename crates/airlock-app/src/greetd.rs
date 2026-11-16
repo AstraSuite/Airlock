@@ -69,9 +69,11 @@ pub mod ffi {
 
 use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::{QString, QStringList};
+use std::collections::VecDeque;
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::pin::Pin;
+use std::sync::{Arc, Mutex};
 
 pub const STATE_INACTIVE: i32 = 0;
 pub const STATE_AUTHENTICATING: i32 = 1;
@@ -79,11 +81,27 @@ pub const STATE_READY_TO_LAUNCH: i32 = 2;
 pub const STATE_LAUNCHING: i32 = 3;
 pub const STATE_LAUNCHED: i32 = 4;
 
+/// A request sent to greetd. greetd answers each request with exactly one
+/// response, in order, so the reader pairs every response with the oldest
+/// request still waiting to tell what it answers: a `success` means "ready
+/// to launch" after authentication, "launched" after `start_session`, and
+/// nothing at all after `cancel_session`.
+#[derive(Clone, Copy, PartialEq)]
+enum Request {
+    CreateSession,
+    Respond,
+    StartSession,
+    CancelSession,
+}
+
+type Pending = Arc<Mutex<VecDeque<Request>>>;
+
 pub struct GreetdRust {
     available: bool,
     state: i32,
     user: QString,
     write_half: Option<UnixStream>,
+    pending: Pending,
 }
 
 impl Default for GreetdRust {
@@ -93,6 +111,7 @@ impl Default for GreetdRust {
             state: STATE_INACTIVE,
             user: QString::default(),
             write_half: None,
+            pending: Pending::default(),
         }
     }
 }
@@ -134,25 +153,31 @@ fn read_frame(stream: &mut UnixStream) -> std::io::Result<serde_json::Value> {
     serde_json::from_slice(&payload).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
 }
 
-fn spawn_reader(mut read_half: UnixStream, qt_thread: cxx_qt::CxxQtThread<ffi::Greetd>) {
+fn spawn_reader(mut read_half: UnixStream, pending: Pending, qt_thread: cxx_qt::CxxQtThread<ffi::Greetd>) {
     std::thread::spawn(move || loop {
         let msg = match read_frame(&mut read_half) {
             Ok(m) => m,
             Err(_) => break,
         };
         let msg_type = msg.get("type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let request = pending.lock().ok().and_then(|mut p| p.pop_front());
+
+        // Whatever greetd says to a cancel (success, or an error when there
+        // was nothing to cancel) changes nothing for the UI.
+        if request == Some(Request::CancelSession) {
+            continue;
+        }
 
         let queued = match msg_type.as_str() {
+            "success" if request == Some(Request::StartSession) => qt_thread.queue(|mut state: Pin<&mut ffi::Greetd>| {
+                state.as_mut().rust_mut().state = STATE_LAUNCHED;
+                state.as_mut().state_changed();
+                state.as_mut().launched();
+            }),
             "success" => qt_thread.queue(|mut state: Pin<&mut ffi::Greetd>| {
-                if state.state == STATE_AUTHENTICATING {
-                    state.as_mut().rust_mut().state = STATE_READY_TO_LAUNCH;
-                    state.as_mut().state_changed();
-                    state.as_mut().ready_to_launch();
-                } else {
-                    state.as_mut().rust_mut().state = STATE_LAUNCHED;
-                    state.as_mut().state_changed();
-                    state.as_mut().launched();
-                }
+                state.as_mut().rust_mut().state = STATE_READY_TO_LAUNCH;
+                state.as_mut().state_changed();
+                state.as_mut().ready_to_launch();
             }),
             "auth_message" => {
                 let message = msg.get("auth_message").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -170,8 +195,12 @@ fn spawn_reader(mut read_half: UnixStream, qt_thread: cxx_qt::CxxQtThread<ffi::G
             "error" => {
                 let description = msg.get("description").and_then(|v| v.as_str()).unwrap_or("Authentication failed").to_string();
                 qt_thread.queue(move |mut state: Pin<&mut ffi::Greetd>| {
-                    state.as_mut().rust_mut().state = STATE_INACTIVE;
-                    state.as_mut().state_changed();
+                    // greetd keeps a session that failed authentication open
+                    // until it's cancelled, and refuses to create another
+                    // meanwhile ("a session is already being configured"), so
+                    // cancel it now, as greetd's own agreety does. Otherwise
+                    // every later attempt fails without reaching PAM (#16).
+                    state.as_mut().cancel_session();
                     state.as_mut().auth_failure(QString::from(description.as_str()));
                 })
             }
@@ -200,17 +229,31 @@ impl cxx_qt::Initialize for ffi::Greetd {
         };
 
         let qt_thread = self.qt_thread();
+        let pending = self.pending.clone();
         {
             let mut rust = self.rust_mut();
             rust.available = true;
             rust.write_half = Some(stream);
         }
 
-        spawn_reader(read_half, qt_thread);
+        spawn_reader(read_half, pending, qt_thread);
     }
 }
 
 impl ffi::Greetd {
+    /// Sends `payload`, first queueing `request` so the reader knows what the
+    /// response it gets back answers.
+    fn send(mut self: Pin<&mut Self>, request: Request, payload: serde_json::Value) {
+        let pending = self.pending.clone();
+        let Ok(mut pending) = pending.lock() else { return };
+        let mut rust = self.as_mut().rust_mut();
+        let Some(stream) = rust.write_half.as_mut() else { return };
+        pending.push_back(request);
+        if write_frame(stream, &payload).is_err() {
+            pending.pop_back();
+        }
+    }
+
     pub fn create_session(mut self: Pin<&mut Self>, user: QString) {
         self.as_mut().rust_mut().user = user.clone();
         self.as_mut().rust_mut().state = STATE_AUTHENTICATING;
@@ -218,25 +261,19 @@ impl ffi::Greetd {
         self.as_mut().state_changed();
 
         let payload = serde_json::json!({ "type": "create_session", "username": user.to_string() });
-        if let Some(stream) = self.as_mut().rust_mut().write_half.as_mut() {
-            let _ = write_frame(stream, &payload);
-        }
+        self.as_mut().send(Request::CreateSession, payload);
     }
 
     pub fn cancel_session(mut self: Pin<&mut Self>) {
         let payload = serde_json::json!({ "type": "cancel_session" });
-        if let Some(stream) = self.as_mut().rust_mut().write_half.as_mut() {
-            let _ = write_frame(stream, &payload);
-        }
+        self.as_mut().send(Request::CancelSession, payload);
         self.as_mut().rust_mut().state = STATE_INACTIVE;
         self.as_mut().state_changed();
     }
 
-    pub fn respond(mut self: Pin<&mut Self>, response: QString) {
+    pub fn respond(self: Pin<&mut Self>, response: QString) {
         let payload = serde_json::json!({ "type": "post_auth_message_response", "response": response.to_string() });
-        if let Some(stream) = self.as_mut().rust_mut().write_half.as_mut() {
-            let _ = write_frame(stream, &payload);
-        }
+        self.send(Request::Respond, payload);
     }
 
     pub fn launch(mut self: Pin<&mut Self>, command: QStringList) {
@@ -249,8 +286,6 @@ impl ffi::Greetd {
         self.as_mut().state_changed();
 
         let payload = serde_json::json!({ "type": "start_session", "cmd": cmd, "env": [] });
-        if let Some(stream) = self.as_mut().rust_mut().write_half.as_mut() {
-            let _ = write_frame(stream, &payload);
-        }
+        self.as_mut().send(Request::StartSession, payload);
     }
 }
