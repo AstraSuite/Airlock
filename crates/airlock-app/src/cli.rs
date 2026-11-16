@@ -627,6 +627,9 @@ pub fn run() -> Action {
     if std::env::var("QT_QPA_PLATFORM").map(|v| v.is_empty()).unwrap_or(true) {
         std::env::set_var("QT_QPA_PLATFORM", "wayland");
     }
+    if std::env::var("QT_WAYLAND_DISABLE_WINDOWDECORATION").map(|v| v.is_empty()).unwrap_or(true) {
+        std::env::set_var("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
+    }
     ensure_xkb_config();
 
     let exe_dir = std::env::current_exe()
