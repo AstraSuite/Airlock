@@ -13,6 +13,7 @@ pub mod ffi {
         #[qproperty(QString, os_pretty_name, READ, NOTIFY = os_pretty_name_changed, cxx_name = "osPrettyName")]
         #[qproperty(QString, wm_name, READ, CONSTANT, cxx_name = "wmName")]
         #[qproperty(QString, user_name, READ, CONSTANT, cxx_name = "userName")]
+        #[qproperty(QString, host_name, READ, CONSTANT, cxx_name = "hostName")]
         #[qproperty(QString, uptime_str, READ, NOTIFY = uptime_str_changed, cxx_name = "uptimeStr")]
         #[qproperty(i32, cpu_percent, READ, NOTIFY = cpu_percent_changed, cxx_name = "cpuPercent")]
         #[qproperty(i32, cpu_temp, READ, NOTIFY = cpu_temp_changed, cxx_name = "cpuTemp")]
@@ -57,6 +58,7 @@ pub struct SystemInfoRust {
     os_pretty_name: QString,
     wm_name: QString,
     user_name: QString,
+    host_name: QString,
     uptime_str: QString,
     cpu_percent: i32,
     cpu_temp: i32,
@@ -77,6 +79,12 @@ impl Default for SystemInfoRust {
                     .as_str(),
             ),
             user_name: QString::from(std::env::var("USER").unwrap_or_else(|_| "dim".to_string()).as_str()),
+            host_name: QString::from(
+                fs::read_to_string("/etc/hostname")
+                    .or_else(|_| fs::read_to_string("/proc/sys/kernel/hostname"))
+                    .unwrap_or_default()
+                    .trim(),
+            ),
             uptime_str: QString::from("0 minutes"),
             cpu_percent: 11,
             cpu_temp: 62,

@@ -2,15 +2,17 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
-import QtQuick.Effects
 import Astra.Airlock
 import M3Shapes
 import "../services"
+import "kit" as Kit
+import "kit/containers" as Kit
+import "kit/controls" as Kit
 
-// Morphing Settings Modal (Bottom-Left) matching Caelestia Nexus Settings layout:
-// Section headers, connected M3 rounded cards, avatar shape scrollable split button,
-// and perfectly aligned toggle switches with check/cross icons.
+// Settings popup (bottom-left). Under Material 3 it morphs out of its
+// trigger button as a liquid blob; under TTY it is a square bordered card
+// over the shared ground, as KiiteShell's popups are. The rows inside are
+// Atlas's controls either way, which draw themselves for TTY on their own.
 Item {
     id: root
 
@@ -22,6 +24,9 @@ Item {
     implicitHeight: 44
 
     property real animDriver: 0
+
+    readonly property int popupWidth: 350
+    readonly property real popupHeight: contentCol.implicitHeight + 28
 
     readonly property var shapeOptions: [
         { name: "Cookie 9-Sided", value: MaterialShape.Cookie9Sided },
@@ -44,6 +49,25 @@ Item {
         { name: "Oval",           value: MaterialShape.Oval }
     ]
 
+    // Index = GreeterState.uiStyle
+    readonly property var styleOptions: [
+        { value: 0, label: "KiiteShell", icon: "sync" },
+        { value: 1, label: "Material 3", icon: "palette" },
+        { value: 2, label: "TTY", icon: "terminal" }
+    ]
+
+    component SectionHeader: Kit.StyledText {
+        Layout.leftMargin: 4
+        Layout.topMargin: 6
+        Layout.bottomMargin: 4
+        color: Colours.palette.m3primary
+        font: Tokens.font.label.large
+    }
+
+    component Toggle: Kit.ToggleRow {
+        color: Colours.tPalette.m3surfaceContainerHigh
+    }
+
     BlobGroup {
         id: blobGroup
         color: Colours.tPalette.m3surfaceContainer
@@ -51,10 +75,11 @@ Item {
         cornerFill: false
     }
 
-    // ── Popup Modal Rect (Elevated above bottom-left button) ──────
+    // ── Material 3: popup blob, elevated above the trigger ───────
     BlobRect {
         id: popupRect
 
+        visible: !Colours.tty
         anchors.left: parent.left
         anchors.bottom: parent.bottom
 
@@ -67,14 +92,13 @@ Item {
 
         states: State {
             name: "open"
-            when: root.isOpen
+            when: root.isOpen && !Colours.tty
 
             PropertyChanges {
                 popupRect.anchors.bottomMargin: 64
                 popupRect.anchors.leftMargin: 0
-                popupRect.implicitWidth: 350
-                popupRect.implicitHeight: contentCol.implicitHeight + 28
-                root.animDriver: 1
+                popupRect.implicitWidth: root.popupWidth
+                popupRect.implicitHeight: root.popupHeight
             }
         }
 
@@ -85,996 +109,441 @@ Item {
                 easing.type: Easing.OutBack
                 easing.overshoot: 1.10
             }
-            NumberAnimation {
-                property: "animDriver"
-                duration: 180
-                easing.type: Easing.OutCubic
-            }
         }
+    }
 
-        // Click catcher inside modal so clicking inside doesn't dismiss
+    // ── TTY: square bordered card in the same place, scanning in and
+    // out as KiiteShell's popups do instead of morphing ────────────
+    TtyScan {
+        id: cardScan
+
+        active: true
+        shown: Colours.tty && root.isOpen
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 64
+        width: root.popupWidth
+        height: root.popupHeight
+
+        Kit.StyledRect {
+            anchors.fill: parent
+            ttyFrame: true
+            color: Colours.palette.m3surface
+        }
+    }
+
+    states: State {
+        name: "open"
+        when: root.isOpen
+        PropertyChanges { root.animDriver: 1 }
+    }
+    transitions: Transition {
+        NumberAnimation {
+            property: "animDriver"
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    // Popup content, inside whichever surface is showing
+    Item {
+        parent: Colours.tty ? cardScan.contentItem : popupRect
+        anchors.fill: parent
+        anchors.margins: 14
+        clip: true
+        opacity: Colours.tty ? 1 : root.animDriver
+        visible: Colours.tty || opacity > 0
+
+        // Click catcher so clicks inside don't dismiss
         MouseArea {
             anchors.fill: parent
+            anchors.margins: -14
             enabled: root.isOpen
             onClicked: {}
         }
 
-        // Popup Content
-        Item {
-            anchors.fill: parent
-            anchors.margins: 14
-            clip: true
-            opacity: root.animDriver
-            visible: opacity > 0
+        ColumnLayout {
+            id: contentCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            spacing: 2
 
-            ColumnLayout {
-                id: contentCol
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                spacing: 2
+            SectionHeader {
+                Layout.topMargin: 2
+                text: "Appearance & Display"
+            }
 
-                // ── Section 1 Header: Appearance & Display ────────
-                Text {
-                    text: "Appearance & Display"
-                    font.family: "Google Sans Flex"
-                    font.pointSize: 9
-                    font.weight: Font.DemiBold
-                    color: Colours.palette.m3onSurfaceVariant
-                    Layout.leftMargin: 4
-                    Layout.topMargin: 2
-                    Layout.bottomMargin: 4
-                }
+            // ── Style: follow KiiteShell, Material 3, or TTY ─────
+            Kit.ConnectedRect {
+                Layout.fillWidth: true
+                first: true
+                color: Colours.tPalette.m3surfaceContainerHigh
+                implicitHeight: styleCol.implicitHeight + Tokens.padding.medium * 2
 
-                // ── Row 1: Avatar Shape (Scrollable Split-Button Dropdown) ──
-                Rectangle {
-                    id: rowShape
-                    Layout.fillWidth: true
-                    implicitHeight: root.shapeMenuOpen ? (48 + shapeDropdownDrawer.implicitHeight) : 48
-                    topLeftRadius: 14
-                    topRightRadius: 14
-                    bottomLeftRadius: 4
-                    bottomRightRadius: 4
-                    clip: true
+                ColumnLayout {
+                    id: styleCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: Tokens.padding.large
+                    anchors.rightMargin: Tokens.padding.large
+                    spacing: Tokens.spacing.small
 
-                    Behavior on implicitHeight {
-                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    Kit.StyledText {
+                        Layout.fillWidth: true
+                        text: "Style"
+                        font: Tokens.font.body.small
+                        color: Colours.palette.m3onSurface
                     }
 
-                    color: hShapeHover.hovered || root.shapeMenuOpen
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-                    HoverHandler { id: hShapeHover }
+                    Kit.StyledText {
+                        Layout.fillWidth: true
+                        text: {
+                            if (TtyMode.forced)
+                                return "Forced to TTY by --tty";
+                            if (Colours.style !== 0)
+                                return "Material 3 Expressive, or drawn like a terminal";
+                            if (!Colours.kiiteAvailable)
+                                return "KiiteShell isn't set up, so Material 3";
+                            return Colours.tty ? "KiiteShell is using TTY" : "KiiteShell is using Material 3";
+                        }
+                        font: Tokens.font.label.small
+                        color: Colours.palette.m3outline
+                        elide: Text.ElideRight
+                    }
 
-                    // Main Row Header Bar
-                    Item {
-                        id: shapeHeaderBar
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 48
+                    Kit.SlidingSelector {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 2
+                        buttonHeight: 34
+                        inactiveColor: Colours.tPalette.m3surfaceContainerHighest
+                        model: root.styleOptions
+                        currentValue: Colours.style
+                        onSelected: value => Colours.setStyle(value)
+                    }
+                }
+            }
 
-                        // Left Label Column
-                        Column {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 14
-                            anchors.right: splitBtnContainer.left
-                            anchors.rightMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 1
+            // ── Avatar shape (scrollable dropdown) ───────────────
+            Kit.ConnectedRect {
+                id: rowShape
+                Layout.fillWidth: true
+                implicitHeight: root.shapeMenuOpen ? (52 + shapeDropdownDrawer.implicitHeight) : 52
+                color: shapeHover.hovered || root.shapeMenuOpen
+                    ? Colours.tPalette.m3surfaceContainerHighest
+                    : Colours.tPalette.m3surfaceContainerHigh
+                clip: true
 
-                            Text {
-                                width: parent.width
+                Behavior on implicitHeight {
+                    Kit.Anim { type: Kit.Anim.DefaultSpatial }
+                }
+                HoverHandler { id: shapeHover }
+
+                Item {
+                    id: shapeHeaderBar
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 52
+
+                    Kit.StateLayer {
+                        anchors.fill: parent
+                        onClicked: root.shapeMenuOpen = !root.shapeMenuOpen
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Tokens.padding.large
+                        anchors.rightMargin: Tokens.padding.large
+                        spacing: Tokens.spacing.medium
+
+                        Kit.MaterialIcon {
+                            text: "face"
+                            color: Colours.palette.m3onSurfaceVariant
+                            fontStyle: Tokens.font.icon.medium
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Kit.StyledText {
+                                Layout.fillWidth: true
                                 text: "Avatar shape"
-                                font.family: "Google Sans Flex"
-                                font.pointSize: 11
-                                font.weight: Font.Medium
+                                font: Tokens.font.body.small
                                 color: Colours.palette.m3onSurface
                                 elide: Text.ElideRight
                             }
-
-                            Text {
-                                width: parent.width
-                                text: "Mask geometry"
-                                font.family: "Google Sans Flex"
-                                font.pointSize: 8
+                            Kit.StyledText {
+                                Layout.fillWidth: true
+                                text: Colours.avatarShapeName
+                                font: Tokens.font.label.small
                                 color: Colours.palette.m3outline
                                 elide: Text.ElideRight
                             }
                         }
 
-                        // Right Split Button Control
-                        Row {
-                            id: splitBtnContainer
-                            anchors.right: parent.right
-                            anchors.rightMargin: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-
-                            // Left Button: Label & Mini Shape Preview
-                            Rectangle {
-                                implicitHeight: 28
-                                implicitWidth: shapeBtnRow.implicitWidth + 16
-                                topLeftRadius: 14
-                                bottomLeftRadius: 14
-                                topRightRadius: 4
-                                bottomRightRadius: 4
-                                color: Colours.tPalette.m3primaryContainer
-
-                                StateLayer {
-                                    color: Colours.palette.m3onPrimaryContainer
-                                    onClicked: root.shapeMenuOpen = !root.shapeMenuOpen
-                                }
-
-                                RowLayout {
-                                    id: shapeBtnRow
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    MaterialShape {
-                                        implicitSize: 14
-                                        shape: Colours.avatarShape
-                                        color: Colours.palette.m3onPrimaryContainer
-                                    }
-
-                                    Text {
-                                        text: Colours.avatarShapeName
-                                        font.family: "Google Sans Flex"
-                                        font.pointSize: 9
-                                        font.weight: Font.Medium
-                                        color: Colours.palette.m3onPrimaryContainer
-                                    }
-                                }
-                            }
-
-                            // Right Button: Arrow Indicator
-                            Rectangle {
-                                implicitHeight: 28
-                                implicitWidth: 26
-                                topLeftRadius: 4
-                                bottomLeftRadius: 4
-                                topRightRadius: 14
-                                bottomRightRadius: 14
-                                color: Colours.tPalette.m3primaryContainer
-
-                                StateLayer {
-                                    color: Colours.palette.m3onPrimaryContainer
-                                    onClicked: root.shapeMenuOpen = !root.shapeMenuOpen
-                                }
-
-                                MaterialIcon {
-                                    anchors.centerIn: parent
-                                    text: "expand_more"
-                                    fontStyle.pointSize: 16
-                                    color: Colours.palette.m3onPrimaryContainer
-                                    rotation: root.shapeMenuOpen ? 180 : 0
-                                    Behavior on rotation { NumberAnimation { duration: 180 } }
-                                }
-                            }
+                        MaterialShape {
+                            visible: !Colours.tty
+                            implicitSize: 18
+                            shape: Colours.avatarShape
+                            color: Colours.palette.m3primary
                         }
-                    }
 
-                    // Dropdown Drawer List
-                    Item {
-                        id: shapeDropdownDrawer
-                        anchors.top: shapeHeaderBar.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-                        anchors.bottomMargin: 8
-                        implicitHeight: 140
-                        visible: root.shapeMenuOpen
-
-                        VerticalFadeListView {
-                            id: shapeListView
-                            anchors.fill: parent
-                            clip: true
-                            model: root.shapeOptions
-                            spacing: 2
-                            fadeAmount: 0.15
-
-                            delegate: Rectangle {
-                                id: shapeItem
-                                required property var modelData
-                                required property int index
-
-                                width: shapeListView.width
-                                implicitHeight: 32
-                                radius: 8
-
-                                readonly property bool isSelected: Colours.avatarShape === modelData.value
-
-                                color: shapeItemState.containsMouse || shapeItem.isSelected
-                                    ? Colours.tPalette.m3primaryContainer
-                                    : "transparent"
-                                Behavior on color { ColorAnimation { duration: 100 } }
-
-                                StateLayer {
-                                    id: shapeItemState
-                                    onClicked: {
-                                        Colours.avatarShape = shapeItem.modelData.value;
-                                        Colours.avatarShapeName = shapeItem.modelData.name;
-                                        root.shapeMenuOpen = false;
-                                    }
-                                }
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 10
-                                    anchors.rightMargin: 10
-                                    spacing: 8
-
-                                    MaterialShape {
-                                        implicitSize: 16
-                                        shape: shapeItem.modelData.value
-                                        color: shapeItem.isSelected
-                                            ? Colours.palette.m3onPrimaryContainer
-                                            : Colours.palette.m3primary
-                                    }
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: shapeItem.modelData.name
-                                        font.family: "Google Sans Flex"
-                                        font.pointSize: 9
-                                        font.weight: shapeItem.isSelected ? Font.Bold : Font.Normal
-                                        color: shapeItem.isSelected
-                                            ? Colours.palette.m3onPrimaryContainer
-                                            : Colours.palette.m3onSurface
-                                    }
-
-                                    MaterialIcon {
-                                        visible: shapeItem.isSelected
-                                        text: "check"
-                                        fontStyle.pointSize: 14
-                                        color: Colours.palette.m3onPrimaryContainer
-                                    }
-                                }
-
-                                TapHandler {
-                                    onTapped: {
-                                        Colours.avatarShape = shapeItem.modelData.value;
-                                        Colours.avatarShapeName = shapeItem.modelData.name;
-                                        root.shapeMenuOpen = false;
-                                    }
-                                }
-                            }
+                        Kit.MaterialIcon {
+                            text: "expand_more"
+                            color: Colours.palette.m3onSurfaceVariant
+                            fontStyle: Tokens.font.icon.small
+                            rotation: root.shapeMenuOpen && !Colours.tty ? 180 : 0
+                            Behavior on rotation { Kit.Anim { type: Kit.Anim.FastSpatial } }
                         }
                     }
                 }
 
-                // ── Row 2: 12-Hour Clock (Middle in Group) ──────────
-                Rectangle {
-                    id: row12h
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
+                Item {
+                    id: shapeDropdownDrawer
+                    anchors.top: shapeHeaderBar.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    implicitHeight: 140
+                    visible: root.shapeMenuOpen
 
-                    color: state12h.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: state12h
-                        onClicked: Colours.use12Hour = !Colours.use12Hour
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switch12h.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "12-hour clock"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Use AM/PM format instead of 24h"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switch12h
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.use12Hour
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumb12h
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.use12Hour ? parent.width - width - 3 : 3
-                            color: Colours.use12Hour ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.use12Hour ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.use12Hour
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                // ── Row 3: Light Mode (Middle in Group) ────────────
-                Rectangle {
-                    id: rowTheme
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
-
-                    color: stateTheme.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateTheme
-                        onClicked: {
-                            const newMode = Colours.light ? "dark" : "light";
-                            Colours.setMode(newMode);
-                        }
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchTheme.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Light theme"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Use light color palette for greeter"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchTheme
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.light
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbTheme
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.light ? parent.width - width - 3 : 3
-                            color: Colours.light ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.light ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.light
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                // ── Row 4: Lava Lamp Animation (Middle in Appearance Group) ────
-                Rectangle {
-                    id: rowAnim
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
-                    topLeftRadius: 4
-                    topRightRadius: 4
-                    bottomLeftRadius: 4
-                    bottomRightRadius: 4
-
-                    color: stateAnim.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateAnim
-                        onClicked: Colours.lavaLampEnabled = !Colours.lavaLampEnabled
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchAnim.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Lava lamp animation"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Dynamic fluid background shapes"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchAnim
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.lavaLampEnabled
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbAnim
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.lavaLampEnabled ? parent.width - width - 3 : 3
-                            color: Colours.lavaLampEnabled ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.lavaLampEnabled ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.lavaLampEnabled
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    id: rowAnim2
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
-                    topLeftRadius: 4
-                    topRightRadius: 4
-                    bottomLeftRadius: 4
-                    bottomRightRadius: 4
-
-                    color: stateAnim2.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateAnim2
-                        onClicked: Colours.wallpaperEnabled = !Colours.wallpaperEnabled
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchAnim2.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Dynamic Wallpaper"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Show synced wallpaper from caelestia"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchAnim2
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.wallpaperEnabled
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbAnim2
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.wallpaperEnabled ? parent.width - width - 3 : 3
-                            color: Colours.wallpaperEnabled ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.wallpaperEnabled ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.wallpaperEnabled
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                // ── Row 5: Skip Clock Screen (Middle in Appearance Group) ────
-                Rectangle {
-                    id: rowSkipClock
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
-                    topLeftRadius: 4
-                    topRightRadius: 4
-                    bottomLeftRadius: 4
-                    bottomRightRadius: 4
-
-                    color: stateSkipClock.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateSkipClock
-                        onClicked: Colours.skipClockPage = !Colours.skipClockPage
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchSkipClock.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Skip clock screen"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Open login card immediately on startup"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchSkipClock
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.skipClockPage
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbSkipClock
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.skipClockPage ? parent.width - width - 3 : 3
-                            color: Colours.skipClockPage ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.skipClockPage ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.skipClockPage
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                // ── Row 6: Locklike Layout (Last in Appearance Group) ────
-                Rectangle {
-                    id: rowLocklike
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    radius: 4
-                    topLeftRadius: 4
-                    topRightRadius: 4
-                    bottomLeftRadius: 14
-                    bottomRightRadius: 14
-
-                    color: stateLocklike.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateLocklike
-                        onClicked: Colours.locklikeEnabled = !Colours.locklikeEnabled
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchLocklike.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Locklike layout"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Show full lockscreen widgets & dashboard"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchLocklike
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: Colours.locklikeEnabled
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbLocklike
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: Colours.locklikeEnabled ? parent.width - width - 3 : 3
-                            color: Colours.locklikeEnabled ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: Colours.locklikeEnabled ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: Colours.locklikeEnabled
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
-                    }
-                }
-
-                // ── Section 2 Header: Session (Visible in test mode) ─
-                Text {
-                    visible: !Greetd.available
-                    text: "Session"
-                    font.family: "Google Sans Flex"
-                    font.pointSize: 9
-                    font.weight: Font.DemiBold
-                    color: Colours.palette.m3onSurfaceVariant
-                    Layout.leftMargin: 4
-                    Layout.topMargin: 8
-                    Layout.bottomMargin: 4
-                }
-
-                // ── Row 5: Exit Test Mode (Single Group) ───────────
-                Rectangle {
-                    visible: !Greetd.available
-                    Layout.fillWidth: true
-                    implicitHeight: 46
-                    radius: 14
-                    color: stateExit.containsMouse
-                        ? Qt.alpha(Colours.palette.m3errorContainer, 0.70)
-                        : Qt.alpha(Colours.palette.m3errorContainer, 0.40)
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateExit
-                        color: Colours.palette.m3onErrorContainer
-                        onClicked: root.exitRequested()
-                    }
-
-                    RowLayout {
+                    Kit.VerticalFadeListView {
+                        id: shapeListView
                         anchors.fill: parent
-                        anchors.leftMargin: 14
-                        anchors.rightMargin: 14
-                        spacing: 10
+                        clip: true
+                        model: root.shapeOptions
+                        spacing: 2
 
-                        MaterialIcon {
-                            text: "logout"
-                            fontStyle.pointSize: 16
-                            color: Colours.palette.m3onErrorContainer
+                        delegate: Kit.StyledRect {
+                            id: shapeItem
+                            required property var modelData
+                            required property int index
+
+                            readonly property bool isSelected: Colours.avatarShape === modelData.value
+
+                            width: shapeListView.width
+                            implicitHeight: 32
+                            radius: Tokens.rounding.small
+                            color: shapeItem.isSelected ? Colours.tPalette.m3primaryContainer : "transparent"
+
+                            Kit.StateLayer {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                onClicked: {
+                                    Colours.avatarShape = shapeItem.modelData.value;
+                                    Colours.avatarShapeName = shapeItem.modelData.name;
+                                    root.shapeMenuOpen = false;
+                                }
+                            }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                MaterialShape {
+                                    implicitSize: 16
+                                    shape: shapeItem.modelData.value
+                                    color: shapeItem.isSelected
+                                        ? Colours.palette.m3onPrimaryContainer
+                                        : Colours.palette.m3primary
+                                }
+
+                                Kit.StyledText {
+                                    Layout.fillWidth: true
+                                    text: shapeItem.modelData.name
+                                    font: Tokens.font.body.small
+                                    color: shapeItem.isSelected
+                                        ? Colours.palette.m3onPrimaryContainer
+                                        : Colours.palette.m3onSurface
+                                }
+
+                                Kit.MaterialIcon {
+                                    visible: shapeItem.isSelected
+                                    text: "check"
+                                    fontStyle: Tokens.font.icon.small
+                                    color: Colours.palette.m3onPrimaryContainer
+                                }
+                            }
                         }
+                    }
+                }
+            }
 
-                        ColumnLayout {
+            Toggle {
+                icon: "schedule"
+                text: "12-hour clock"
+                subtext: "Use AM/PM format instead of 24h"
+                checked: Colours.use12Hour
+                onToggled: v => Colours.use12Hour = v
+            }
+
+            Toggle {
+                icon: "light_mode"
+                text: "Light theme"
+                subtext: Colours.tty ? "TTY is always dark" : "Use light color palette for greeter"
+                disabled: Colours.tty
+                checked: Colours.light
+                onToggled: v => Colours.setMode(v ? "light" : "dark")
+            }
+
+            Toggle {
+                icon: "bubble_chart"
+                text: "Lava lamp animation"
+                subtext: "Dynamic fluid background shapes"
+                checked: Colours.lavaLampEnabled
+                onToggled: v => Colours.lavaLampEnabled = v
+            }
+
+            Toggle {
+                icon: "wallpaper"
+                text: "Dynamic wallpaper"
+                subtext: "Show synced wallpaper from caelestia"
+                checked: Colours.wallpaperEnabled
+                onToggled: v => Colours.wallpaperEnabled = v
+            }
+
+            Toggle {
+                icon: "skip_next"
+                text: "Skip clock screen"
+                subtext: "Open login card immediately on startup"
+                checked: Colours.skipClockPage
+                onToggled: v => Colours.skipClockPage = v
+            }
+
+            Toggle {
+                last: true
+                icon: "dashboard"
+                text: "Locklike layout"
+                subtext: "Show full lockscreen widgets & dashboard"
+                checked: Colours.locklikeEnabled
+                onToggled: v => Colours.locklikeEnabled = v
+            }
+
+            // ── Session (test mode only) ─────────────────────────
+            SectionHeader {
+                visible: !Greetd.available
+                Layout.topMargin: 8
+                text: "Session"
+            }
+
+            Kit.ConnectedRect {
+                visible: !Greetd.available
+                Layout.fillWidth: true
+                first: true
+                last: true
+                implicitHeight: 52
+                color: Colours.tty ? Colours.palette.m3errorContainer : Qt.alpha(Colours.palette.m3errorContainer, 0.4)
+
+                Kit.StateLayer {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Colours.palette.m3onErrorContainer
+                    onClicked: root.exitRequested()
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Tokens.padding.large
+                    anchors.rightMargin: Tokens.padding.large
+                    spacing: Tokens.spacing.medium
+
+                    Kit.MaterialIcon {
+                        text: "logout"
+                        fontStyle: Tokens.font.icon.medium
+                        color: Colours.palette.m3onErrorContainer
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Kit.StyledText {
                             Layout.fillWidth: true
-                            spacing: 1
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: "Exit test mode"
-                                font.family: "Google Sans Flex"
-                                font.pointSize: 11
-                                font.weight: Font.Medium
-                                color: Colours.palette.m3onErrorContainer
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: "Close greeter preview window"
-                                font.family: "Google Sans Flex"
-                                font.pointSize: 8
-                                color: Qt.alpha(Colours.palette.m3onErrorContainer, 0.75)
-                                horizontalAlignment: Text.AlignLeft
-                            }
-                        }
-
-                        MaterialIcon {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            text: "chevron_right"
-                            fontStyle.pointSize: 16
+                            text: "Exit test mode"
+                            font: Tokens.font.body.small
                             color: Colours.palette.m3onErrorContainer
                         }
-                    }
-                }
-
-                // ── Section 3 Header: Battery (Visible in test mode) ─
-                Text {
-                    visible: !Greetd.available
-                    text: "Battery"
-                    font.family: "Google Sans Flex"
-                    font.pointSize: 9
-                    font.weight: Font.DemiBold
-                    color: Colours.palette.m3onSurfaceVariant
-                    Layout.leftMargin: 4
-                    Layout.topMargin: 8
-                    Layout.bottomMargin: 4
-                }
-
-                // ── Row: Charging (First in Battery Group) ──────────
-                Rectangle {
-                    id: rowCharge
-                    visible: !Greetd.available
-                    Layout.fillWidth: true
-                    implicitHeight: 48
-                    topLeftRadius: 14
-                    topRightRadius: 14
-                    bottomLeftRadius: 4
-                    bottomRightRadius: 4
-
-                    color: stateCharge.containsMouse
-                        ? Colours.tPalette.m3surfaceContainerHighest
-                        : Colours.tPalette.m3surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 120 } }
-
-                    StateLayer {
-                        id: stateCharge
-                        onClicked: BatteryState.simCharging = !BatteryState.simCharging
-                    }
-
-                    // Left Text Column
-                    Column {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.right: switchCharge.left
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            width: parent.width
-                            text: "Charging"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 11
-                            font.weight: Font.Medium
-                            color: Colours.palette.m3onSurface
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Simulate plugged-in power"
-                            font.family: "Google Sans Flex"
-                            font.pointSize: 8
-                            color: Colours.palette.m3outline
-                            elide: Text.ElideRight
+                        Kit.StyledText {
+                            Layout.fillWidth: true
+                            text: "Close greeter preview window"
+                            font: Tokens.font.label.small
+                            color: Qt.alpha(Colours.palette.m3onErrorContainer, 0.75)
                         }
                     }
 
-                    // M3 Switch with Check/Cross Icon (Strictly Far Right)
-                    Rectangle {
-                        id: switchCharge
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 42
-                        implicitHeight: 24
-                        radius: 12
-                        color: BatteryState.simCharging
-                            ? Colours.palette.m3primary
-                            : Colours.tPalette.m3surfaceContainerHighest
-                        Behavior on color { ColorAnimation { duration: 150 } }
-
-                        Rectangle {
-                            id: thumbCharge
-                            width: 18
-                            height: 18
-                            radius: 9
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: BatteryState.simCharging ? parent.width - width - 3 : 3
-                            color: BatteryState.simCharging ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                            Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: BatteryState.simCharging ? "check" : "close"
-                                fontStyle.pointSize: 11
-                                color: BatteryState.simCharging
-                                    ? Colours.palette.m3primary
-                                    : Colours.palette.m3surfaceContainerHigh
-                            }
-                        }
+                    Kit.MaterialIcon {
+                        text: "chevron_right"
+                        fontStyle: Tokens.font.icon.medium
+                        color: Colours.palette.m3onErrorContainer
                     }
                 }
+            }
 
-                // ── Row: Battery Level Slider (Last in Battery Group) ──
-                SliderRow {
-                    visible: !Greetd.available
-                    Layout.fillWidth: true
-                    topLeftRadius: 4
-                    topRightRadius: 4
-                    bottomLeftRadius: 14
-                    bottomRightRadius: 14
+            // ── Battery simulation (test mode only) ──────────────
+            SectionHeader {
+                visible: !Greetd.available
+                Layout.topMargin: 8
+                text: "Battery"
+            }
 
-                    icon: "battery_full"
-                    label: "Battery level"
-                    value: BatteryState.simPercentage / 100
-                    onMoved: v => BatteryState.simPercentage = v * 100
-                }
+            Toggle {
+                visible: !Greetd.available
+                first: true
+                icon: "bolt"
+                text: "Charging"
+                subtext: "Simulate plugged-in power"
+                checked: BatteryState.simCharging
+                onToggled: v => BatteryState.simCharging = v
+            }
+
+            SliderRow {
+                visible: !Greetd.available
+                Layout.fillWidth: true
+                topLeftRadius: Tokens.rounding.extraSmall
+                topRightRadius: Tokens.rounding.extraSmall
+                bottomLeftRadius: Tokens.rounding.large
+                bottomRightRadius: Tokens.rounding.large
+
+                icon: "battery_full"
+                label: "Battery level"
+                value: BatteryState.simPercentage / 100
+                onMoved: v => BatteryState.simPercentage = v * 100
             }
         }
     }
 
-    // ── Trigger Button Rect (Bottom-Left, connects with Popup) ───
+    // ── Trigger button (bottom-left, connects with the popup) ────
     BlobRect {
         id: btnRect
 
+        visible: !Colours.tty
         anchors.fill: parent
         group: blobGroup
         radius: root.isOpen ? 22 : 16
 
         Behavior on radius { NumberAnimation { duration: 150 } }
+    }
 
-        MaterialIcon {
-            anchors.centerIn: parent
-            text: root.isOpen ? "close" : "tune"
-            fontStyle.pointSize: 18
-            color: root.isOpen
-                ? Colours.palette.m3primary
-                : Colours.palette.m3onSurface
-            Behavior on color { ColorAnimation { duration: 150 } }
-        }
+    Kit.MaterialIcon {
+        anchors.centerIn: parent
+        text: root.isOpen ? "close" : "tune"
+        fontStyle: Tokens.font.icon.large
+        color: root.isOpen ? Colours.palette.m3primary : Colours.palette.m3onSurface
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
-            onClicked: {
-                root.isOpen = !root.isOpen;
-                if (!root.isOpen) root.shapeMenuOpen = false;
-            }
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        hoverEnabled: true
+        onClicked: {
+            root.isOpen = !root.isOpen;
+            if (!root.isOpen) root.shapeMenuOpen = false;
         }
     }
 }

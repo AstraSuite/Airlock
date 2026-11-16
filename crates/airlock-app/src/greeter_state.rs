@@ -17,6 +17,7 @@ pub mod ffi {
         #[qproperty(bool, lava_lamp_enabled, READ, WRITE = set_lava_lamp_enabled, NOTIFY = lava_lamp_enabled_changed, cxx_name = "lavaLampEnabled")]
         #[qproperty(bool, skip_clock_page, READ, WRITE = set_skip_clock_page, NOTIFY = skip_clock_page_changed, cxx_name = "skipClockPage")]
         #[qproperty(bool, locklike_enabled, READ, WRITE = set_locklike_enabled, NOTIFY = locklike_enabled_changed, cxx_name = "locklikeEnabled")]
+        #[qproperty(i32, ui_style, READ, WRITE = set_ui_style, NOTIFY = ui_style_changed, cxx_name = "uiStyle")]
         #[qproperty(QString, last_user, READ, WRITE = set_last_user, NOTIFY = last_user_changed, cxx_name = "lastUser")]
         #[qproperty(QString, scheme_name, READ, WRITE = set_scheme_name, NOTIFY = scheme_name_changed, cxx_name = "schemeName")]
         #[qproperty(QString, scheme_flavour, READ, WRITE = set_scheme_flavour, NOTIFY = scheme_flavour_changed, cxx_name = "schemeFlavour")]
@@ -49,6 +50,9 @@ pub mod ffi {
         #[cxx_name = "locklikeEnabledChanged"]
         fn locklike_enabled_changed(self: Pin<&mut GreeterState>);
         #[qsignal]
+        #[cxx_name = "uiStyleChanged"]
+        fn ui_style_changed(self: Pin<&mut GreeterState>);
+        #[qsignal]
         #[cxx_name = "lastUserChanged"]
         fn last_user_changed(self: Pin<&mut GreeterState>);
         #[qsignal]
@@ -77,6 +81,8 @@ pub mod ffi {
         fn set_skip_clock_page(self: Pin<&mut GreeterState>, value: bool);
         #[cxx_name = "setLocklikeEnabled"]
         fn set_locklike_enabled(self: Pin<&mut GreeterState>, value: bool);
+        #[cxx_name = "setUiStyle"]
+        fn set_ui_style(self: Pin<&mut GreeterState>, value: i32);
         #[cxx_name = "setLastUser"]
         fn set_last_user(self: Pin<&mut GreeterState>, value: QString);
         #[cxx_name = "setSchemeName"]
@@ -203,6 +209,8 @@ pub struct GreeterStateRust {
     lava_lamp_enabled: bool,
     skip_clock_page: bool,
     locklike_enabled: bool,
+    /// 0 follows the user's KiiteShell theme, 1 is Material 3, 2 is TTY.
+    ui_style: i32,
     last_user: QString,
     scheme_name: QString,
     scheme_flavour: QString,
@@ -223,6 +231,7 @@ impl Default for GreeterStateRust {
             lava_lamp_enabled: true,
             skip_clock_page: false,
             locklike_enabled: false,
+            ui_style: 0,
             last_user: QString::default(),
             scheme_name: QString::from("caelestia"),
             scheme_flavour: QString::from("default"),
@@ -292,6 +301,7 @@ impl ffi::GreeterState {
         self.as_mut().lava_lamp_enabled_changed();
         self.as_mut().skip_clock_page_changed();
         self.as_mut().locklike_enabled_changed();
+        self.as_mut().ui_style_changed();
         self.as_mut().last_user_changed();
         self.as_mut().scheme_name_changed();
         self.as_mut().scheme_flavour_changed();
@@ -312,6 +322,7 @@ impl ffi::GreeterState {
             "skipClockPage": self.skip_clock_page,
             "locklikeEnabled": self.locklike_enabled,
             "locklike": self.locklike_enabled,
+            "uiStyle": self.ui_style,
             "schemeName": self.scheme_name.to_string(),
             "schemeFlavour": self.scheme_flavour.to_string(),
             "schemeMode": self.scheme_mode.to_string(),
@@ -390,6 +401,7 @@ impl ffi::GreeterState {
         self.as_mut().lava_lamp_enabled_changed();
         self.as_mut().skip_clock_page_changed();
         self.as_mut().locklike_enabled_changed();
+        self.as_mut().ui_style_changed();
         self.as_mut().scheme_name_changed();
         self.as_mut().scheme_flavour_changed();
         self.as_mut().scheme_mode_changed();
@@ -443,6 +455,15 @@ impl ffi::GreeterState {
         if self.locklike_enabled == value { return; }
         self.as_mut().rust_mut().locklike_enabled = value;
         self.as_mut().locklike_enabled_changed();
+        self.as_mut().ui_style_changed();
+        self.as_mut().save();
+    }
+
+    pub fn set_ui_style(mut self: Pin<&mut Self>, value: i32) {
+        let value = value.clamp(0, 2);
+        if self.ui_style == value { return; }
+        self.as_mut().rust_mut().ui_style = value;
+        self.as_mut().ui_style_changed();
         self.as_mut().save();
     }
 
@@ -578,6 +599,9 @@ fn apply_settings_object(mut state: Pin<&mut ffi::GreeterState>, s: &Value) {
     }
     if let Some(v) = s.get("locklikeEnabled").and_then(Value::as_bool).or_else(|| s.get("locklike").and_then(Value::as_bool)) {
         state.as_mut().rust_mut().locklike_enabled = v;
+    }
+    if let Some(v) = s.get("uiStyle").and_then(Value::as_i64) {
+        state.as_mut().rust_mut().ui_style = (v as i32).clamp(0, 2);
     }
     if let Some(v) = s.get("schemeName").and_then(Value::as_str) {
         state.as_mut().rust_mut().scheme_name = QString::from(v);

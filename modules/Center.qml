@@ -7,6 +7,7 @@ import M3Shapes
 import Astra.Airlock
 import "../services"
 import "../components"
+import "../components/kit" as Kit
 
 // Centered Clean Login Panel — Profile picture, User switcher, Password input, Split session button
 Item {
@@ -57,8 +58,8 @@ Item {
         }
     }
 
-    implicitWidth: 350
-    implicitHeight: loginCard.implicitHeight
+    implicitWidth: Colours.tty ? ttyLogin.implicitWidth : 350
+    implicitHeight: Colours.tty ? ttyLogin.implicitHeight : loginCard.implicitHeight
     width: implicitWidth
     height: implicitHeight
 
@@ -97,6 +98,14 @@ Item {
                 root.pendingPassword = "";
                 root.dismissed();
             }
+            event.accepted = true;
+            return;
+        }
+
+        // TTY: the arrows move the session box's selection
+        if (Colours.tty && (event.key === Qt.Key_Up || event.key === Qt.Key_Down) && root._sessionsList.length > 0) {
+            const n = root._sessionsList.length;
+            root.selectSession((root.currentSessionIndex + (event.key === Qt.Key_Down ? 1 : n - 1)) % n);
             event.accepted = true;
             return;
         }
@@ -161,6 +170,14 @@ Item {
                 root.passwordBuffer = "";
                 Greetd.createSession(root._user.username);
             }
+        }
+    }
+
+    function selectSession(idx) {
+        root.currentSessionIndex = idx;
+        const s = root._sessionsList[idx];
+        if (s && root._user) {
+            GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
         }
     }
 
@@ -232,6 +249,7 @@ Item {
         implicitWidth: 360
         implicitHeight: cardCol.implicitHeight + 44
         radius: 28
+        visible: !Colours.tty
         z: sessionSplitBtn.menuOpen ? 2600 : 1
         color: Colours.tPalette.m3surfaceContainer
         Behavior on color { CAnim {} }
@@ -360,13 +378,7 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 2
                 currentIndex: root.currentSessionIndex
-                onSessionChanged: idx => {
-                    root.currentSessionIndex = idx;
-                    const s = root._sessionsList[idx];
-                    if (s && root._user) {
-                        GreeterState.saveSession(root._user.username, s.key || s.file || s.name);
-                    }
-                }
+                onSessionChanged: idx => root.selectSession(idx)
             }
 
             // ── State / Feedback Message ─────────────────────────────
@@ -375,6 +387,211 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillWidth: true
                 Layout.topMargin: 2
+            }
+        }
+    }
+
+    // ── TTY login: a "user" box holding the avatar and a console-style
+    // prompt, over a "session" box to pick from ──────────────────────────
+    Column {
+        id: ttyLogin
+        anchors.centerIn: parent
+        visible: Colours.tty
+        spacing: 40
+
+        readonly property bool busy: root.testSimulating
+            || Greetd.state === GreetdState.Authenticating
+            || Greetd.state === GreetdState.Launching
+        property bool cursorOn: true
+        property int spinFrame: 0
+        readonly property var spinner: ["|", "/", "-", "\\"]
+
+        Timer {
+            interval: 530
+            running: ttyLogin.visible && !ttyLogin.busy
+            repeat: true
+            onTriggered: ttyLogin.cursorOn = !ttyLogin.cursorOn
+            onRunningChanged: ttyLogin.cursorOn = true
+        }
+        Timer {
+            interval: 120
+            running: ttyLogin.visible && ttyLogin.busy
+            repeat: true
+            onTriggered: ttyLogin.spinFrame = (ttyLogin.spinFrame + 1) % 4
+        }
+
+        Item {
+            id: userBox
+            width: 420
+            height: userCol.implicitHeight + 64
+
+            Kit.TtyBox {
+                anchors.fill: parent
+                title: "user"
+                accent: true
+            }
+
+            Column {
+                id: userCol
+                anchors.centerIn: parent
+                width: parent.width - 64
+                spacing: 24
+
+                Item {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 84
+                    height: 84
+
+                    Image {
+                        id: ttyAvatar
+                        anchors.fill: parent
+                        anchors.margins: 1
+                        source: root._user?.avatar || ""
+                        fillMode: Image.PreserveAspectCrop
+                        visible: status === Image.Ready
+                        mipmap: true
+                    }
+
+                    Kit.StyledText {
+                        anchors.centerIn: parent
+                        visible: !ttyAvatar.visible
+                        text: {
+                            const name = root._user ? (root._user.realName || root._user.username) : "";
+                            return name.length > 0 ? name.charAt(0).toUpperCase() : "?";
+                        }
+                        color: Colours.palette.m3inverseOnSurface
+                        font.family: Tokens.font.body.medium.family
+                        font.pixelSize: 34
+                        font.weight: Font.DemiBold
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Colours.palette.m3outlineVariant
+                    }
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 10
+
+                    Row {
+                        spacing: 10
+
+                        Kit.StyledText {
+                            text: "airlock login:"
+                            color: Colours.palette.m3outline
+                        }
+
+                        Kit.StyledText {
+                            text: root._user ? root._user.username : "?"
+                            color: loginMouse.containsMouse || userModal.isOpen
+                                ? Colours.palette.m3primary
+                                : Colours.palette.m3inverseOnSurface
+
+                            MouseArea {
+                                id: loginMouse
+                                anchors.fill: parent
+                                anchors.margins: -4
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: userModal.isOpen = !userModal.isOpen
+                            }
+                        }
+                    }
+
+                    Row {
+                        spacing: 10
+
+                        Kit.StyledText {
+                            text: "password:"
+                            color: Colours.palette.m3outline
+                        }
+
+                        Kit.StyledText {
+                            text: ttyLogin.busy
+                                ? "authenticating " + ttyLogin.spinner[ttyLogin.spinFrame]
+                                : "*".repeat(Math.min(root.passwordBuffer.length, 24)) + (ttyLogin.cursorOn ? "█" : " ")
+                            color: ttyLogin.busy ? Colours.palette.m3outline : Colours.palette.m3inverseOnSurface
+                        }
+                    }
+
+                    Kit.StyledText {
+                        width: parent.width
+                        visible: text.length > 0
+                        text: stateMsgComponent.msg.length > 0
+                            ? stateMsgComponent.msg
+                            : (stateMsgComponent.infoMsgShouldBeVisible ? stateMsgComponent.infoMsg : "")
+                        color: stateMsgComponent.msg.length > 0 ? Colours.palette.m3error : Colours.palette.m3outline
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
+        }
+
+        Item {
+            id: sessionBox
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 300
+            height: sessionCol.implicitHeight + 40
+
+            Kit.TtyBox {
+                anchors.fill: parent
+                title: "session"
+            }
+
+            Column {
+                id: sessionCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 20
+                anchors.rightMargin: 20
+                spacing: 8
+
+                Repeater {
+                    model: root._sessionsList
+
+                    delegate: Item {
+                        id: sessionRow
+                        required property int index
+                        required property var modelData
+
+                        readonly property bool current: index === root.currentSessionIndex
+
+                        width: sessionCol.width
+                        height: sessionLine.implicitHeight
+                        opacity: current || sessionMouse.containsMouse ? 1 : 0.55
+
+                        Row {
+                            id: sessionLine
+                            spacing: 10
+
+                            Kit.StyledText {
+                                width: 10
+                                text: sessionRow.current ? "›" : ""
+                                color: Colours.palette.m3primary
+                            }
+
+                            Kit.StyledText {
+                                width: sessionRow.width - 20
+                                text: sessionRow.modelData.name || sessionRow.modelData.key || ""
+                                color: sessionRow.current ? Colours.palette.m3inverseOnSurface : Colours.palette.m3onSurfaceVariant
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        MouseArea {
+                            id: sessionMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.selectSession(sessionRow.index)
+                        }
+                    }
+                }
             }
         }
     }

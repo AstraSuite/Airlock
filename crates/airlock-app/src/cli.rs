@@ -5,6 +5,14 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+static FORCE_TTY: AtomicBool = AtomicBool::new(false);
+
+/// Whether `--tty` asked for the TTY look regardless of the user's style.
+pub fn force_tty() -> bool {
+    FORCE_TTY.load(Ordering::Relaxed)
+}
 
 pub enum Action {
     /// Proceed to launch the greeter UI, having set up the environment.
@@ -19,13 +27,21 @@ fn is_file(p: &str) -> bool {
     Path::new(p).is_file()
 }
 
-fn current_user() -> String {
-    if let Ok(sudo) = std::env::var("SUDO_USER") {
-        if !sudo.is_empty() {
-            return sudo;
-        }
+/// The user who ran us through sudo or pkexec, if either.
+fn invoking_user() -> Option<String> {
+    if let Some(sudo) = std::env::var("SUDO_USER").ok().filter(|s| !s.is_empty()) {
+        return Some(sudo);
     }
-    std::env::var("USER").unwrap_or_else(|_| "user".to_string())
+    let uid = std::env::var("PKEXEC_UID").ok()?;
+    let text = fs::read_to_string("/etc/passwd").ok()?;
+    text.lines().find_map(|line| {
+        let parts: Vec<&str> = line.split(':').collect();
+        (parts.len() >= 3 && parts[2] == uid).then(|| parts[0].to_string())
+    })
+}
+
+fn current_user() -> String {
+    invoking_user().unwrap_or_else(|| std::env::var("USER").unwrap_or_else(|_| "user".to_string()))
 }
 
 fn expand_path(path: &str, home: &str) -> String {
@@ -122,15 +138,19 @@ fn set_pfp(source: &str, user: &str) -> i32 {
 }
 
 fn sync_scheme() -> i32 {
-    let (user, home) = if let Some(sudo) = std::env::var("SUDO_USER").ok().filter(|s| !s.is_empty()) {
-        let home = lookup_home_dir(&sudo).unwrap_or_else(|| format!("/home/{sudo}"));
-        (sudo, home)
+    let (user, home) = if let Some(invoker) = invoking_user() {
+        let home = lookup_home_dir(&invoker).unwrap_or_else(|| format!("/home/{invoker}"));
+        (invoker, home)
     } else if let Some(u) = std::env::var("USER").ok().filter(|s| !s.is_empty()) {
         let home = std::env::var("HOME").unwrap_or_else(|_| format!("/home/{u}"));
         (u, home)
     } else {
         ("default".to_string(), "/root".to_string())
     };
+
+    // KiiteShell's state doesn't depend on Caelestia being installed, so it
+    // syncs first and on its own.
+    let kiite_synced = sync_kiite(&user, &home);
 
     let cache_home = format!("{home}/.cache");
     let config_home = format!("{home}/.config");
@@ -154,12 +174,15 @@ except Exception:
         .arg(py_script)
         .output();
 
-    let Ok(output) = output else {
-        eprintln!("astra-airlock: error: failed to retrieve current scheme from caelestia for user '{user}'");
-        return 1;
-    };
-    let json_output = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if !output.status.success() || json_output.is_empty() {
+    let json_output = output
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_default();
+    if json_output.is_empty() {
+        if kiite_synced {
+            return 0;
+        }
         eprintln!("astra-airlock: error: failed to retrieve current scheme from caelestia for user '{user}'");
         return 1;
     }
@@ -185,6 +208,40 @@ except Exception:
     }
 
     0
+}
+
+/// Copies `user`'s KiiteShell palette and the `appearance` part of their
+/// config where the greeter can read them; see `kiite.rs`. True if either
+/// was copied.
+fn sync_kiite(user: &str, home: &str) -> bool {
+    let colours = fs::read_to_string(format!("{home}/{}", crate::kiite::COLOURS_REL)).ok();
+    let appearance = fs::read_to_string(format!("{home}/{}", crate::kiite::CONFIG_REL))
+        .ok()
+        .and_then(|text| crate::kiite::appearance_only(&text));
+    if colours.is_none() && appearance.is_none() {
+        return false;
+    }
+
+    let dir = format!("{}/{user}", crate::kiite::SYNC_DIR);
+    if fs::create_dir_all(&dir).is_err() {
+        eprintln!("astra-airlock: error: could not create '{dir}'");
+        return false;
+    }
+    let mut synced = false;
+    for (name, text) in [(crate::kiite::COLOURS_SYNCED, colours), (crate::kiite::APPEARANCE_SYNCED, appearance)] {
+        let Some(text) = text else { continue };
+        let path = format!("{dir}/{name}");
+        if fs::write(&path, text).is_ok() {
+            let _ = fs::set_permissions(&path, std::os::unix::fs::PermissionsExt::from_mode(0o644));
+            synced = true;
+        } else {
+            eprintln!("astra-airlock: error: could not write '{path}'");
+        }
+    }
+    if synced {
+        println!("astra-airlock: synced KiiteShell theme for user '{user}' to {dir}/");
+    }
+    synced
 }
 
 fn find_asset_path(filename: &str, exe_dir: &Path) -> Option<PathBuf> {
@@ -462,8 +519,12 @@ Other modes:\n\
 \n\
   --sync | -s              grab the active user's current Caelestia scheme\n\
                            and save it as the 'dynamic' scheme in the greeter's\n\
-                           cache (/var/cache/astra-airlock/schemes/dynamic/<user>/);\n\
-                           run with sudo.\n\
+                           cache (/var/cache/astra-airlock/schemes/dynamic/<user>/),\n\
+                           and copy their KiiteShell palette and appearance\n\
+                           (/var/cache/astra-airlock/kiite/<user>/);\n\
+                           run with sudo or pkexec.\n\
+\n\
+  --tty                    draw the TTY look whatever the user's style is.\n\
 \n\
   --set-pfp FILE           copy FILE into the shared avatar store\n\
                            (/var/cache/astra-airlock/avatars/<user>)\n\
@@ -600,6 +661,7 @@ pub fn run() -> Action {
                 return Action::Exit(0);
             }
             "--sync" | "-s" => return Action::Exit(sync_scheme()),
+            "--tty" => FORCE_TTY.store(true, Ordering::Relaxed),
             "--kiosk" | "-k" => {
                 let v = take_value();
                 return Action::Exit(configure_kiosk(&v, &exe_dir));

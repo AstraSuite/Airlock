@@ -157,7 +157,7 @@ fn main() {
     for dir in ["components", "modules", "services"] {
         println!("cargo:rerun-if-changed={}", repo_root.join(dir).display());
     }
-    println!("cargo:rerun-if-changed={}", repo_root.join("native/blobs").display());
+    println!("cargo:rerun-if-changed={}", repo_root.join("native").display());
 
     let builder = CxxQtBuilder::new_qml_module(QmlModule::new("Astra.Airlock"))
         .files([
@@ -170,6 +170,7 @@ fn main() {
             "src/system_info.rs",
             "src/battery.rs",
             "src/quickshell_compat.rs",
+            "src/tty_mode.rs",
         ])
         .cpp_files([
             // Headers first: moc only runs on files passed here that it
@@ -180,12 +181,18 @@ fn main() {
             repo_root.join("native/blobs/blobshape.hpp"),
             repo_root.join("native/blobs/blobrect.hpp"),
             repo_root.join("native/blobs/blobinvertedrect.hpp"),
+            repo_root.join("native/theme/fontbuilder.hpp"),
+            repo_root.join("native/theme/font.hpp"),
+            repo_root.join("native/theme/tokens.hpp"),
             repo_root.join("native/blobs/blobgroup.cpp"),
             repo_root.join("native/blobs/blobshape.cpp"),
             repo_root.join("native/blobs/blobrect.cpp"),
             repo_root.join("native/blobs/blobinvertedrect.cpp"),
             repo_root.join("native/blobs/blobmaterial.cpp"),
-            repo_root.join("native/blobs/register.cpp"),
+            repo_root.join("native/theme/fontbuilder.cpp"),
+            repo_root.join("native/theme/font.cpp"),
+            repo_root.join("native/theme/tokens.cpp"),
+            repo_root.join("native/register.cpp"),
         ])
         .qt_module("Quick")
         .qrc(qrc_path);

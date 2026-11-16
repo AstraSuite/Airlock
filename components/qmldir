@@ -36,3 +36,5 @@ UserPickerModal 1.0 UserPickerModal.qml
 VerticalFadeListView 1.0 VerticalFadeListView.qml
 WavyTopRect 1.0 WavyTopRect.qml
 WeatherCard 1.0 WeatherCard.qml
+TtyClock 1.0 TtyClock.qml
+TtyStatusLine 1.0 TtyStatusLine.qml

@@ -6,11 +6,16 @@ import Astra.Airlock
 import "../services"
 import "../components"
 import "../modules"
+import "../components/kit" as Kit
 
 // Full-screen greeter surface matching Caelestia shell design language.
 //
 // IDLE   — M3 Lava Lamp background (crisp shapes), Titan One chubby stacked clock, power menu top-left, settings bottom-left, schemes bottom-right
 // ACTIVE — Lava Lamp softly blurs into bokeh, Titan One clock fades, active clock/date appears in top-right, clean central login card fades in
+//
+// Under the TTY look (Colours.tty) the wallpaper and lava lamp give way to
+// the flat ground, the clock sits in a titled TtyBox, and the chrome is
+// plain text and icons, as KiiteShell draws its TTY theme.
 Rectangle {
     id: root
 
@@ -54,7 +59,7 @@ Rectangle {
         source: "file:///var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
         visible: root.enabled
-        opacity: root.wallpaperEnabled ? 1 : 0
+        opacity: root.wallpaperEnabled && !Colours.tty ? 1 : 0
         scale: root.panelVisible ? 1 : 1.02
         property bool active: true
 
@@ -77,7 +82,7 @@ Rectangle {
         source: "file:///var/cache/astra-airlock/wallpapers/" + Colours.currentUser
         fillMode: Image.PreserveAspectCrop
         visible: true
-        opacity: root.wallpaperEnabled && !wallpaper.active ? 1 : 0
+        opacity: root.wallpaperEnabled && !wallpaper.active && !Colours.tty ? 1 : 0
         scale: root.panelVisible ? 1 : 1.02
 
         Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
@@ -97,14 +102,16 @@ Rectangle {
     Item {
         id: bgLayer
         anchors.fill: parent
-        opacity: root.entered ? 1 : 0
-        scale: root.entered ? 1 : 0.97
+        // TTY doesn't fade or zoom: its boxes scan in (TtyScan) instead
+        opacity: Colours.tty || root.entered ? 1 : 0
+        scale: Colours.tty || root.entered ? 1 : 0.97
         Behavior on opacity { NumberAnimation { duration: 650; easing.type: Easing.OutCubic } }
         Behavior on scale   { NumberAnimation { duration: 650; easing.type: Easing.OutCubic } }
 
         // Hardware-Accelerated Lava Lamp (blurs only when login panel opens)
         LavaLamp {
             anchors.fill: parent
+            visible: !Colours.tty
             blurry: root.panelVisible
             opacity: root.panelVisible ? 0.62 : 0.75
             Behavior on opacity { NumberAnimation { duration: 400 } }
@@ -113,18 +120,89 @@ Rectangle {
         // IDLE view: Titan One Stacked Clock
         Item {
             anchors.fill: parent
-            opacity: root.entered ? (root.panelVisible ? 0 : 1) : 0
-            scale: root.entered ? (root.panelVisible ? 0.90 : 1) : 0.92
-            visible: opacity > 0
+            opacity: Colours.tty ? 1 : root.entered ? (root.panelVisible ? 0 : 1) : 0
+            scale: Colours.tty ? 1 : root.entered ? (root.panelVisible ? 0.90 : 1) : 0.92
+            visible: Colours.tty || opacity > 0
             Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
             Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 
             IdleClock {
                 anchors.centerIn: parent
+                visible: !Colours.tty
+            }
+
+            // TTY: the clock in its own titled box, its title's cursor the
+            // one thing blinking on the idle screen
+            Item {
+                visible: Colours.tty
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -height * 0.04
+                width: Math.max(560, ttyClock.implicitWidth + 80)
+                height: 300
+
+                TtyScan {
+                    anchors.fill: parent
+                    shown: root.entered && !root.panelVisible
+                    showDelay: 300
+                    rise: 10
+
+                    Kit.TtyBox {
+                        anchors.fill: parent
+                        title: "clock"
+                        focused: true
+                    }
+
+                    TtyClock {
+                        id: ttyClock
+                        anchors.centerIn: parent
+                        large: true
+                    }
+                }
+            }
+
+            Item {
+                visible: Colours.tty
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 150
+                width: hintRow.implicitWidth
+                height: hintRow.implicitHeight
+
+                TtyScan {
+                    anchors.fill: parent
+                    shown: root.entered && !root.panelVisible
+                    showDelay: 300
+
+                    Row {
+                        id: hintRow
+                        spacing: 10
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 60
+                            height: 1
+                            color: Colours.palette.m3outlineVariant
+                        }
+                        Kit.StyledText {
+                            text: "press any key to unlock"
+                            color: Colours.palette.m3outline
+                            font.family: Tokens.font.body.medium.family
+                            font.pointSize: Tokens.font.body.small.pointSize
+                            font.letterSpacing: 1
+                        }
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 60
+                            height: 1
+                            color: Colours.palette.m3outlineVariant
+                        }
+                    }
+                }
             }
 
             // "Press enter or any key to unlock" pulsing hint
             Text {
+                visible: !Colours.tty
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 48
@@ -164,6 +242,7 @@ Rectangle {
         anchors.topMargin: root.entered ? 24 : 8
         spacing: 10
         z: 2000
+        visible: !Colours.tty
         opacity: root.entered ? 1 : 0
         Behavior on opacity          { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
         Behavior on anchors.topMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
@@ -183,6 +262,51 @@ Rectangle {
         }
     }
 
+    // ── TTY status line (Top-Left Corner) ─────────────────────────
+    Item {
+        visible: Colours.tty
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: 32
+        anchors.topMargin: 36
+        width: statusLine.implicitWidth
+        height: statusLine.implicitHeight
+        z: 2000
+
+        TtyScan {
+            anchors.fill: parent
+            shown: root.entered
+
+            TtyStatusLine {
+                id: statusLine
+            }
+        }
+    }
+
+    // ── TTY active clock (Top-Right Corner, plain text) ───────────
+    Item {
+        visible: Colours.tty
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 36
+        anchors.topMargin: 34
+        width: smallClock.implicitWidth
+        height: smallClock.implicitHeight
+        z: 2000
+
+        TtyScan {
+            anchors.fill: parent
+            shown: root.entered && root.panelVisible
+            showDelay: 300
+
+            TtyClock {
+                id: smallClock
+                width: parent.width
+                large: false
+            }
+        }
+    }
+
     // ── Active Clock & Date (Top-Right Corner) ────────────────────
     ActiveClock {
         id: activeClock
@@ -191,7 +315,7 @@ Rectangle {
         anchors.rightMargin: 28
         anchors.topMargin: root.entered ? 24 : 8
         z: 2000
-        opacity: root.entered ? (root.panelVisible && !Colours.locklikeEnabled ? 1 : 0) : 0
+        opacity: root.entered ? (root.panelVisible && !Colours.locklikeEnabled && !Colours.tty ? 1 : 0) : 0
         Behavior on opacity          { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
         Behavior on anchors.topMargin { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
     }
@@ -199,16 +323,28 @@ Rectangle {
     // ── ACTIVE view: Login Panel (Standard or Locklike) ───────────
     Item {
         anchors.fill: parent
-        opacity: root.entered ? (root.panelVisible ? 1 : 0) : 0
-        scale: root.entered ? (root.panelVisible ? 1 : 1.05) : 0.94
-        visible: opacity > 0
+        opacity: Colours.tty ? 1 : root.entered ? (root.panelVisible ? 1 : 0) : 0
+        scale: Colours.tty ? 1 : root.entered ? (root.panelVisible ? 1 : 1.05) : 0.94
+        visible: Colours.tty || opacity > 0
         Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
         Behavior on scale   { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
 
-        Loader {
-            id: activePanelLoader
+        // Under TTY the login boxes scan in and out; otherwise this just
+        // holds the panel and the fade above does the motion
+        TtyScan {
             anchors.centerIn: parent
-            sourceComponent: Colours.locklikeEnabled ? locklikeComp : standardComp
+            width: activePanelLoader.width
+            height: activePanelLoader.height
+            shown: root.entered && root.panelVisible
+            showDelay: 300
+            rise: 10
+
+            Loader {
+                id: activePanelLoader
+                // The locklike dashboard has no TTY drawing; TTY always logs in
+                // through the standard panel.
+                sourceComponent: Colours.locklikeEnabled && !Colours.tty ? locklikeComp : standardComp
+            }
         }
 
         Component {

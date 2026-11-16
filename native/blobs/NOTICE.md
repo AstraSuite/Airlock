@@ -32,8 +32,8 @@ Two small changes from upstream, needed because this is built via
   `mocs_compilation.cpp` the way CMake's AUTOMOC does it), so the
   `Q_PROPERTY(BlobGroup* group ...)` pointer meta-type needs `BlobGroup` to
   be a complete type in that header, not just forward-declared.
-- `register.cpp` (new, not upstream): `BlobGroup`/`BlobRect`/
-  `BlobInvertedRect` carry `QML_ELEMENT`, but that only takes effect when
-  qmltyperegistrar runs over a `qt_add_qml_module` target's own sources,
-  which cxx-qt-build's `cpp_files` doesn't do. This file calls
-  `qmlRegisterType` for the three manually instead; see `main.rs`.
+- Registration: `BlobGroup`/`BlobRect`/`BlobInvertedRect` carry
+  `QML_ELEMENT`, but that only takes effect when qmltyperegistrar runs over a
+  `qt_add_qml_module` target's own sources, which cxx-qt-build's `cpp_files`
+  doesn't do. `../register.cpp` (not upstream) calls `qmlRegisterType` for
+  the three manually instead; see `main.rs`.

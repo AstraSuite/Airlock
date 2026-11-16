@@ -8,18 +8,20 @@ mod greetd;
 mod system_info;
 mod battery;
 mod quickshell_compat;
+mod kiite;
+mod tty_mode;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
 
-// Vendored from caelestia-shell (native/blobs, GPLv3, see its NOTICE.md);
-// registers BlobGroup/BlobRect/BlobInvertedRect into the Astra.Airlock QML
-// module. Plain C linkage, not a cxx bridge, since it needs no Rust-side type.
+// Registers the native (C++) QML types — the vendored Blobs renderer and the
+// Tokens singleton — into Astra.Airlock; see native/register.hpp. Plain C
+// linkage, not a cxx bridge, since it needs no Rust-side type.
 unsafe extern "C" {
-    fn registerBlobsQmlTypes();
+    fn registerNativeQmlTypes();
 }
 
 fn main() {
-    unsafe { registerBlobsQmlTypes() };
+    unsafe { registerNativeQmlTypes() };
 
     // Still handles --sync/--set-wallpaper/--kiosk/monitor flags/etc; the
     // whole QML tree is now baked into this binary (see build.rs), so there

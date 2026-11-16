@@ -78,23 +78,15 @@ fn scheme_search_paths() -> Vec<PathBuf> {
     paths
 }
 
-/// KiiteShell's own generated-palette file: a flat, snake_case JSON object
-/// (see kiiteshell-theme/src/wallpaper.rs: sync_desktop_color_scheme()).
-fn kiite_generated_colours_path() -> Option<PathBuf> {
-    let home = std::env::var_os("HOME").map(PathBuf::from)?;
-    Some(home.join(".local/state/kiite/user/generated/colors.json"))
-}
-
-fn snake_to_m3_camel(key: &str) -> String {
-    let mut out = String::with_capacity(key.len() + 2);
-    out.push('m');
-    let mut cap_next = true;
+/// "on_primary" -> "onPrimary", the role names Colours' `_applyColoursMap`
+/// expects (it adds the "m3" prefix itself).
+fn snake_to_camel(key: &str) -> String {
+    let mut out = String::with_capacity(key.len());
+    let mut cap_next = false;
     for ch in key.chars() {
         if ch == '_' {
             cap_next = true;
-            continue;
-        }
-        if cap_next {
+        } else if cap_next {
             out.extend(ch.to_uppercase());
             cap_next = false;
         } else {
@@ -104,18 +96,13 @@ fn snake_to_m3_camel(key: &str) -> String {
     out
 }
 
-/// KiiteShell colours only apply as the "kiite" scheme name, any mode/flavour.
-fn kiite_scheme_colours() -> Option<Map<String, Value>> {
-    let path = kiite_generated_colours_path()?;
-    let text = fs::read_to_string(path).ok()?;
-    let raw: Map<String, Value> = serde_json::from_str(&text).ok()?;
-
-    let mut out = Map::new();
-    for (k, v) in raw {
-        let Some(hex) = v.as_str() else { continue };
-        let hex = hex.trim_start_matches('#');
-        out.insert(snake_to_m3_camel(&k), json!(format!("#{hex}")));
-    }
+/// KiiteShell's generated palette for `user` (see kiite.rs for where it's
+/// read from). It only applies as the "kiite" scheme name, any mode/flavour.
+fn kiite_scheme_colours(user: &str) -> Option<Map<String, Value>> {
+    let out: Map<String, Value> = crate::kiite::colours(user)?
+        .into_iter()
+        .filter_map(|(k, v)| Some((snake_to_camel(&k), json!(format!("#{}", v.as_str()?.trim_start_matches('#'))))))
+        .collect();
     if out.is_empty() {
         None
     } else {
@@ -178,9 +165,9 @@ fn read_colours_from_dir(dir: &Path, mode: &str) -> Option<Map<String, Value>> {
     None
 }
 
-fn get_scheme_colours_impl(name: &str, flavour: &str, mode: &str) -> Map<String, Value> {
+fn get_scheme_colours_impl(user: &str, name: &str, flavour: &str, mode: &str) -> Map<String, Value> {
     if name.eq_ignore_ascii_case("kiite") {
-        return kiite_scheme_colours().unwrap_or_default();
+        return kiite_scheme_colours(user).unwrap_or_default();
     }
 
     let mode = if mode.is_empty() { "dark" } else { mode };
@@ -210,7 +197,7 @@ fn get_scheme_colours_impl(name: &str, flavour: &str, mode: &str) -> Map<String,
     }
 
     if is_dynamic {
-        return get_scheme_colours_impl("caelestia", "default", mode);
+        return get_scheme_colours_impl(user, "caelestia", "default", mode);
     }
 
     Map::new()
@@ -266,9 +253,9 @@ fn discover_schemes(active_user: &str) -> Vec<Value> {
                     flavour_name.clone()
                 };
 
-                let mut colours = get_scheme_colours_impl(&scheme_name, &target_flavour, "dark");
+                let mut colours = get_scheme_colours_impl(active_user, &scheme_name, &target_flavour, "dark");
                 if colours.is_empty() {
-                    colours = get_scheme_colours_impl(&scheme_name, &target_flavour, "light");
+                    colours = get_scheme_colours_impl(active_user, &scheme_name, &target_flavour, "light");
                 }
                 if colours.is_empty() {
                     continue;
@@ -296,7 +283,7 @@ fn discover_schemes(active_user: &str) -> Vec<Value> {
     }
 
     // KiiteShell's own generated palette, if present, is listed as the "kiite" scheme.
-    if let Some(colours) = kiite_scheme_colours() {
+    if let Some(colours) = kiite_scheme_colours(active_user) {
         out.push(json!({
             "name": "kiite",
             "flavour": "default",
@@ -343,7 +330,7 @@ impl ffi::SchemeDiscovery {
     }
 
     pub fn get_scheme_colours(&self, name: QString, flavour: QString, mode: QString) -> QString {
-        let colours = get_scheme_colours_impl(&name.to_string(), &flavour.to_string(), &mode.to_string());
+        let colours = get_scheme_colours_impl(&self.active_user.to_string(), &name.to_string(), &flavour.to_string(), &mode.to_string());
         QString::from(serde_json::to_string(&colours).unwrap_or_else(|_| "{}".to_string()).as_str())
     }
 }
