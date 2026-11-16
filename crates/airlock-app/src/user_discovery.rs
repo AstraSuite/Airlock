@@ -205,12 +205,17 @@ impl ffi::UserDiscovery {
             target = 0;
         }
 
+        // currentUser is set whenever it differs, not only when the index
+        // moves: reload() resets the index to 0 first, so a default user at
+        // index 0 (the usual single-user case) used to leave currentUser
+        // empty, and with it the wallpaper path and per-user theme (#17).
+        let username = QString::from(self.users[target as usize].username.as_str());
         if self.default_index != target {
-            let username = self.users[target as usize].username.clone();
-            let mut rust = self.as_mut().rust_mut();
-            rust.default_index = target;
-            rust.current_user = QString::from(username.as_str());
+            self.as_mut().rust_mut().default_index = target;
             self.as_mut().default_index_changed();
+        }
+        if self.current_user != username {
+            self.as_mut().rust_mut().current_user = username;
             self.as_mut().current_user_changed();
         }
     }
