@@ -25,6 +25,7 @@
     packages = forAllSystems (pkgs: rec {
       astra-airlock = pkgs.callPackage ./nix {
         inherit (inputs) m3shapes;
+        inherit (pkgs) symlinkJoin writeShellScriptBin material-symbols;
       };
       default = astra-airlock;
     });
